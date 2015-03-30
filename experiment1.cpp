@@ -35,33 +35,25 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   GLuint drawNormalsProgram = 0;
   GLuint vao1 = 0, vao2 = 0;
 
-
   GLuint matricesubo = 0;
+  GLuint lightsubo = 0;
 
   vec4 ambientColor;
 
-  Light lights[10];
-
   Material sphere_material;
 
-  const GLuint MV_MAT_LOC = 0;
-  const GLuint PROJ_MAT_LOC = 1;
-  const GLuint NORMAL_MAT_LOC = 2;
+  const GLuint MATS_UBO_BINDING_POINT = 1;
+  const GLuint LIGHTS_UBO_BINDING_POINT = 2;
   const GLuint MATERIAL_LOC = 3;
   const GLuint AMBIENT_LOC = 6;
   const GLuint LIGHTS_LOC = 7;
   const GLuint COLOR1_LOC = 2;
   const GLuint COLOR2_LOC = 3;
 
+  const GLuint NUM_LIGHTS = 10;
+
   SimpleMirrorGLWindow(size_t w, size_t h) :
       SDLGLWindow(w, h) {
-  }
-
-  void set_light_uniform(GLuint light_index) {
-    GLuint base_index = LIGHTS_LOC + 3 * light_index;
-    glUniform4fv(base_index, 1, value_ptr(lights[light_index].pos));
-    glUniform4fv(base_index + 1, 1, value_ptr(lights[light_index].diffuse));
-    glUniform4fv(base_index + 2, 1, value_ptr(lights[light_index].specular));
   }
 
   void setup(SDLGLWindow& w) {
@@ -76,7 +68,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
-    sphere_mesh = make_sphere(1.5, 15, 15);
+    sphere_mesh = make_sphere(1.5, 55, 55);
 
     // Setup vertex array for mesh
     glBindBuffer(GL_ARRAY_BUFFER, sphere_mesh.vbo);
@@ -105,57 +97,75 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glGenBuffers(1, &matricesubo);
     glBindBuffer(GL_UNIFORM_BUFFER, matricesubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrices), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, MATS_UBO_BINDING_POINT, matricesubo);
     Matrices* mats = reinterpret_cast<Matrices*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
     mats->projection = ortho(-2.5, 2.5, -2.5, 2.5, 0.1, 100.0);
-    mats->modelview = lookAt(vec3(0.0, 0.0, 3.5), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+    mats->modelview = lookAt(vec3(0.0, 22.0, 3.5), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     mats->normal = transpose(inverse(mat4(mat3(mats->modelview))));
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, matricesubo);
+
+    // Setup lights
+    glGenBuffers(1, &lightsubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, lightsubo);
+    glBufferData(GL_UNIFORM_BUFFER, NUM_LIGHTS * sizeof(Light), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, LIGHTS_UBO_BINDING_POINT, lightsubo);
+    Light* lights = reinterpret_cast<Light*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
+
+    memset(lights, 0, NUM_LIGHTS * sizeof(Light));
+    lights[0].pos = mats->modelview * vec4(15.0, 55.0, -15.0, 1.0);
+    lights[0].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[0].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[1].pos = mats->modelview * vec4(-15.0, 55.0, -15.0, 1.0);
+    lights[1].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[1].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[2].pos = mats->modelview * vec4(0.0, 55.0, -15.0, 1.0);
+    lights[2].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[2].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[3].pos = mats->modelview * vec4(-15.0, 55.0, 0.0, 1.0);
+    lights[3].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[3].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[4].pos = mats->modelview * vec4(15.0, 55.0, 0.0, 1.0);
+    lights[4].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[4].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[5].pos = mats->modelview * vec4(0.0, 55.0, 0.0, 1.0);
+    lights[5].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[5].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[6].pos = mats->modelview * vec4(-15.0, 55.0, 15.0, 1.0);
+    lights[6].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[6].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[7].pos = mats->modelview * vec4(15.0, 55.0, 15.0, 1.0);
+    lights[7].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[7].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[8].pos = mats->modelview * vec4(0.0, 55.0, 15.0, 1.0);
+    lights[8].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
+    lights[8].specular = vec4(0.75, 0.75, 0.75, 1.0);
+
+    lights[9].pos = mats->modelview * vec4(0.0, 0.0, 3.5, 1.0);
+    lights[9].diffuse = vec4(0.55, 0.55, 0.55, 1.0);
+    lights[9].specular = vec4(0.1, 0.1, 0.1, 1.0);
 
     // Set uniforms for lighting program
     glUseProgram(phongProgram);
 
     // Setup lights
-    ambientColor = vec4(0.0, 0.0, 0.01, 1.0);
+    ambientColor = vec4(0.0, 0.05, 0.1, 1.0);
     glUniform4fv(AMBIENT_LOC, 1, value_ptr(ambientColor));
 
-    lights[0].pos = mats->modelview * vec4(15.0, 15.0, 15.0, 1.0);
-    lights[0].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[0].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(0);
-
-    lights[1].pos = mats->modelview * vec4(-15.0, 15.0, 15.0, 1.0);
-    lights[1].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[1].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(1);
-
-    lights[2].pos = mats->modelview * vec4(0.0, 15.0, 15.0, 1.0);
-    lights[2].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[2].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(2);
-
-    lights[3].pos = mats->modelview * vec4(-15.0, -15.0, 15.0, 1.0);
-    lights[3].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[3].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(3);
-
-    lights[4].pos = mats->modelview * vec4(15.0, -15.0, 15.0, 1.0);
-    lights[4].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[4].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(4);
-
-    lights[5].pos = mats->modelview * vec4(0.0, -15.0, 15.0, 1.0);
-    lights[5].diffuse = vec4(0.15, 0.15, 0.15, 1.0);
-    lights[5].specular = vec4(0.75, 0.75, 0.75, 1.0);
-    set_light_uniform(5);
-
     // Setup material
-    sphere_material.diffuse = vec4(0.0, 0.0, 0.7, 1.0);
+    sphere_material.diffuse = vec4(0.0, 0.6, 0.7, 1.0);
     glUniform4fv(MATERIAL_LOC, 1, value_ptr(sphere_material.diffuse));
 
-    sphere_material.specular = vec4(1.0, 1.0, 0.3, 1.0);
+    sphere_material.specular = vec4(1.0, 0.4, 0.3, 1.0);
     glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphere_material.specular));
 
-    sphere_material.shine = 1005.0f;
+    sphere_material.shine = 500.0f;
     glUniform1f(MATERIAL_LOC + 2, sphere_material.shine);
 
     // Setup uniforms for drawing normals
@@ -164,13 +174,13 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glUniform4fv(COLOR2_LOC, 1, value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
 
     glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesubo);
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
     glUseProgram(0);
   }
 
   void draw(SDLGLWindow& w) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glBindVertexArray(vao1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere_mesh.ibo);
@@ -179,8 +189,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glUseProgram(0);
-
-//    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 //    glBindVertexArray(vao2);
 //    glUseProgram(drawNormalsProgram);

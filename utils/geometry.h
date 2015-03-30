@@ -143,7 +143,7 @@ ArrayOfStructs make_sphere(double radius, unsigned theta_samples, unsigned phi_s
 
   // Set the position of the top vertex
   vertices[vert_i].position = {0.0, -radius, 0.0, 1.0};
-  vertices[vert_i].normal = glm::normalize(-glm::vec3(vertices[vert_i].position));
+  vertices[vert_i].normal = glm::normalize(glm::vec3(vertices[vert_i].position));
   vert_i += 1;
 
   // Construct the top triangle of vertices connected to the top vertex
@@ -191,8 +191,9 @@ ArrayOfStructs make_sphere(double radius, unsigned theta_samples, unsigned phi_s
   }
 
   // Set the position of the bottom vertex
-  vertices[vert_i].normal = glm::vec3(0.0);
-  vertices[vert_i++].position = {0.0, radius, 0.0, 1.0};
+  vertices[vert_i].position = {0.0, radius, 0.0, 1.0};
+  vertices[vert_i].normal = glm::normalize(glm::vec3(vertices[vert_i].position));
+  vert_i += 1;
 
   glGenBuffers(1, &ret.normal_view_vbo);
   glBindBuffer(GL_ARRAY_BUFFER, ret.normal_view_vbo);
