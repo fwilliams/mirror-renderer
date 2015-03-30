@@ -66,6 +66,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   void setup(SDLGLWindow& w) {
     glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1, 0.1, 0.2, 1.0);
     check_gl_error()
 
     // Build shader programs
@@ -75,7 +76,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
-    sphere_mesh = make_sphere(1.5, 55, 55);
+    sphere_mesh = make_sphere(1.5, 15, 15);
 
     // Setup vertex array for mesh
     glBindBuffer(GL_ARRAY_BUFFER, sphere_mesh.vbo);
