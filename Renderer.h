@@ -21,6 +21,9 @@ class Renderer {
   const GLuint MATS_UBO_BINDING_POINT = 1;
   const GLuint LIGHTS_UBO_BINDING_POINT = 2;
 
+  const GLuint COLOR1_LOC = 2;
+  const GLuint COLOR2_LOC = 3;
+
   const GLuint NUM_LIGHTS = 10;
 
   Light* lights;

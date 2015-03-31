@@ -15,8 +15,7 @@ struct vertex {
   glm::vec2 texcoord;
 };
 
-struct Geometry {
-  Geometry() {}
+class Geometry {
   Geometry(GLuint num_vertices, GLuint num_indices) : num_vertices(num_vertices), num_indices(num_indices) {
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -31,13 +30,21 @@ struct Geometry {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*) sizeof(vao));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*) sizeof(glm::vec4));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex),
         (void*) (sizeof(glm::vec4) + sizeof(glm::vec3)));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glGenBuffers(1, &normal_view_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, normal_view_vbo);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(glm::vec3), nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
+
+public:
+  Geometry() {}
 
   GLuint vbo = 0;
   GLuint ibo = 0;
@@ -67,20 +74,9 @@ struct Geometry {
   static Geometry make_triangle() {
     Geometry ret(3, 3);
 
-    // Allocate and map a vertex and index buffer object for the sphere
-    ret.num_vertices = 3;
-    ret.num_indices = 3;
-
-    glGenBuffers(1, &ret.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    glBufferData(GL_ARRAY_BUFFER, ret.num_vertices * sizeof(vertex), nullptr, GL_STATIC_DRAW);
-
     vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
-
-    glGenBuffers(1, &ret.ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ret.num_indices * sizeof(GLuint), nullptr, GL_STATIC_DRAW);
-
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
     vertices[0].position = {-0.5, -0.5, 0.0, 1.0 };
@@ -92,9 +88,7 @@ struct Geometry {
 
     compute_normals(vertices, indices, ret.num_indices);
 
-    glGenBuffers(1, &ret.normal_view_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, ret.normal_view_vbo);
-    glBufferData(GL_ARRAY_BUFFER, ret.num_vertices * 2 * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
     glm::vec4* normals = reinterpret_cast<glm::vec4*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
 
     for(unsigned j = 0, i = 0; j < ret.num_vertices; i+=2) {
@@ -107,31 +101,21 @@ struct Geometry {
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
     return ret;
   }
 
   static Geometry make_sphere(double radius, unsigned theta_samples, unsigned phi_samples) {
     Geometry ret(theta_samples * phi_samples, phi_samples * 6 + (theta_samples - 2) * phi_samples * 6);
 
-    // Allocate and map a vertex and index buffer object for the sphere
-    ret.num_vertices = theta_samples * phi_samples;
-    ret.num_indices = phi_samples * 6 + (theta_samples - 2) * phi_samples * 6;
-
-    glGenBuffers(1, &ret.vbo);
+    // Map vertex and index buffer objects for the sphere
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    glBufferData(GL_ARRAY_BUFFER, ret.num_vertices * sizeof(vertex), nullptr, GL_STATIC_DRAW);
-
     vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
-
-    glGenBuffers(1, &ret.ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ret.num_indices * sizeof(GLuint), nullptr, GL_STATIC_DRAW);
-
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
     // Variables hold the current vertex to write to
@@ -153,7 +137,6 @@ struct Geometry {
     // Offset of the first index for this theta sample
     unsigned index_base = 1;
 
-  //  double cos_sin_phi[2][phi_samples];
     // Cache of cosine and sine of each phi sample for reuse in inner loop
     double* cos_sin_phi[2];
     {
@@ -217,9 +200,7 @@ struct Geometry {
     vertices[vert_i].normal = glm::normalize(glm::vec3(vertices[vert_i].position));
     vert_i += 1;
 
-    glGenBuffers(1, &ret.normal_view_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, ret.normal_view_vbo);
-    glBufferData(GL_ARRAY_BUFFER, ret.num_vertices * 2 * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
     glm::vec4* normals = reinterpret_cast<glm::vec4*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
 
     for(unsigned j = 0, i = 0; j < ret.num_vertices; i+=2) {
@@ -232,7 +213,6 @@ struct Geometry {
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

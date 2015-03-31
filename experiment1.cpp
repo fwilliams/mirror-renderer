@@ -30,8 +30,6 @@ void dcb(GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, co
 struct SimpleMirrorGLWindow: SDLGLWindow {
   Geometry sphere_mesh;
   GLuint phongProgram = 0;
-  GLuint drawNormalsProgram = 0;
-  GLuint vao1 = 0, vao2 = 0;
 
   GLuint matricesubo = 0;
   GLuint lightsubo = 0;
@@ -39,14 +37,13 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   vec4 ambientColor;
 
   Material sphere_material;
+  Renderer* rndr;
 
   const GLuint MATS_UBO_BINDING_POINT = 1;
   const GLuint LIGHTS_UBO_BINDING_POINT = 2;
   const GLuint MATERIAL_LOC = 3;
   const GLuint AMBIENT_LOC = 6;
   const GLuint LIGHTS_LOC = 7;
-  const GLuint COLOR1_LOC = 2;
-  const GLuint COLOR2_LOC = 3;
 
   const GLuint NUM_LIGHTS = 10;
 
@@ -55,6 +52,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 
   void setup(SDLGLWindow& w) {
+//    rndr = new Renderer();
+
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(dcb, nullptr);
     glEnable(GL_DEPTH_TEST);
@@ -62,36 +61,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     check_gl_error()
 
     // Build shader programs
-    drawNormalsProgram = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
-                                                        "shaders/draw_normals_frag.glsl");
     phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
     sphere_mesh = Geometry::make_sphere(1.5, 55, 55);
-
-    // Setup vertex array for mesh
-    glBindBuffer(GL_ARRAY_BUFFER, sphere_mesh.vbo);
-    glGenVertexArrays(1, &vao1);
-    glBindVertexArray(vao1);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*) sizeof(vec4));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex),
-        (void*) (sizeof(vec4) + sizeof(vec3)));
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Setup vertex array for drawing normals
-    glBindBuffer(GL_ARRAY_BUFFER, sphere_mesh.normal_view_vbo);
-    glGenVertexArrays(1, &vao2);
-    glBindVertexArray(vao2);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Setup view and projection transformations
     glGenBuffers(1, &matricesubo);
@@ -169,10 +143,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glUniform1f(MATERIAL_LOC + 2, sphere_material.shine);
 
     // Setup uniforms for drawing normals
-    glUseProgram(drawNormalsProgram);
-    glUniform4fv(COLOR1_LOC, 1, value_ptr(vec4(1.0, 0.0, 0.0, 1.0)));
-    glUniform4fv(COLOR2_LOC, 1, value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
-
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, matricesubo);
     glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -182,19 +152,13 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   void draw(SDLGLWindow& w) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindVertexArray(vao1);
+    glBindVertexArray(sphere_mesh.vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere_mesh.ibo);
     glUseProgram(phongProgram);
     glDrawElements(GL_TRIANGLES, sphere_mesh.num_indices, GL_UNSIGNED_INT, NULL);
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glUseProgram(0);
-
-//    glBindVertexArray(vao2);
-//    glUseProgram(drawNormalsProgram);
-//    glDrawArrays(GL_LINES, 0, sphere_mesh.num_vertices * 2);
-//    glBindVertexArray(0);
-//    glUseProgram(0);
   }
 };
 
