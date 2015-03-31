@@ -6,16 +6,10 @@
 #include "utils/sdl_gl_window.h"
 #include "utils/gl_program_builder.h"
 #include "utils/gl_utils.h"
-#include "utils/geometry.h"
+#include "Renderer.h"
 
 using namespace glm;
 using namespace std;
-
-struct Light {
-  vec4 pos;
-  vec4 diffuse;
-  vec4 specular;
-};
 
 struct Material {
   vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
@@ -29,8 +23,12 @@ struct Matrices {
   mat4 normal = mat4(1.0); // TODO: Make this a mat3 maybe?
 };
 
+void dcb(GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const void* usr) {
+  cout << msg << endl;
+}
+
 struct SimpleMirrorGLWindow: SDLGLWindow {
-  ArrayOfStructs sphere_mesh;
+  Geometry sphere_mesh;
   GLuint phongProgram = 0;
   GLuint drawNormalsProgram = 0;
   GLuint vao1 = 0, vao2 = 0;
@@ -57,6 +55,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 
   void setup(SDLGLWindow& w) {
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(dcb, nullptr);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1, 0.1, 0.2, 1.0);
     check_gl_error()
@@ -68,7 +68,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
-    sphere_mesh = make_sphere(1.5, 55, 55);
+    sphere_mesh = Geometry::make_sphere(1.5, 55, 55);
 
     // Setup vertex array for mesh
     glBindBuffer(GL_ARRAY_BUFFER, sphere_mesh.vbo);
@@ -89,7 +89,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glGenVertexArrays(1, &vao2);
     glBindVertexArray(vao2);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -99,8 +99,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrices), nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, MATS_UBO_BINDING_POINT, matricesubo);
     Matrices* mats = reinterpret_cast<Matrices*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
-    mats->projection = ortho(-2.5, 2.5, -2.5, 2.5, 0.1, 100.0);
-    mats->modelview = lookAt(vec3(0.0, 22.0, 3.5), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+    mats->projection = perspective(45.0, w.aspectRatio(), 0.5, 100.0);//ortho(-2.5, 2.5, -2.5, 2.5, 0.1, 100.0);
+    mats->modelview = lookAt(vec3(2.5, 1.5, 2.5), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     mats->normal = transpose(inverse(mat4(mat3(mats->modelview))));
 
     // Setup lights
@@ -148,21 +148,21 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     lights[8].specular = vec4(0.75, 0.75, 0.75, 1.0);
 
     lights[9].pos = mats->modelview * vec4(0.0, 0.0, 3.5, 1.0);
-    lights[9].diffuse = vec4(0.55, 0.55, 0.55, 1.0);
+    lights[9].diffuse = vec4(0.55, 0.95, 0.55, 1.0);
     lights[9].specular = vec4(0.1, 0.1, 0.1, 1.0);
 
     // Set uniforms for lighting program
     glUseProgram(phongProgram);
 
     // Setup lights
-    ambientColor = vec4(0.0, 0.05, 0.1, 1.0);
+    ambientColor = vec4(0.0, 0.05, 0.05, 1.0);
     glUniform4fv(AMBIENT_LOC, 1, value_ptr(ambientColor));
 
     // Setup material
-    sphere_material.diffuse = vec4(0.0, 0.6, 0.7, 1.0);
+    sphere_material.diffuse = vec4(0.4, 0.6, 0.7, 1.0);
     glUniform4fv(MATERIAL_LOC, 1, value_ptr(sphere_material.diffuse));
 
-    sphere_material.specular = vec4(1.0, 0.4, 0.3, 1.0);
+    sphere_material.specular = vec4(0.6, 0.4, 0.3, 1.0);
     glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphere_material.specular));
 
     sphere_material.shine = 500.0f;

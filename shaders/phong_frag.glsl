@@ -5,6 +5,7 @@ struct Light {
 	vec4 diffuse;
 	vec4 specular;
 };
+
 struct Material {
 	vec4 diffuse;
 	vec4 specular;
