@@ -52,9 +52,11 @@ public:
 
   virtual void teardown(SDLGLWindow&) {};
 
+  void enableDebugLogging();
+
   void mainLoop();
 
-  void stop() {
+  void close() {
     running = false;
   }
 

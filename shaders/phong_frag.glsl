@@ -27,6 +27,7 @@ out vec4 fragcolor;
 
 void main() {
 	fragcolor = ambient;
+
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < lights.length(); i++) {
 		vec3 dir_to_light = normalize(vec3(lights[i].position - v_position));

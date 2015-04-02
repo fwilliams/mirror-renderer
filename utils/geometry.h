@@ -39,12 +39,25 @@ class Geometry {
 
     glGenBuffers(1, &normal_view_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, normal_view_vbo);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(glm::vec3), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * 2 * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &normal_view_vao);
+    glBindVertexArray(normal_view_vao);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
+    glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
 public:
   Geometry() {}
+  ~Geometry() {
+//    glDeleteBuffers(1, &vbo);
+//    glDeleteBuffers(1, &ibo);
+//    glDeleteBuffers(1, &normal_view_vbo);
+//    glDeleteVertexArrays(1, &vao);
+//    glDeleteVertexArrays(1, &normal_view_vao);
+  }
 
   GLuint vbo = 0;
   GLuint ibo = 0;

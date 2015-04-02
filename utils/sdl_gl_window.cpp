@@ -1,5 +1,7 @@
 #include "sdl_gl_window.h"
 
+#include <iostream>
+
 using namespace std;
 
 SDLGLWindow::SDLGLWindow(size_t width, size_t height) :
@@ -45,4 +47,17 @@ void SDLGLWindow::mainLoop() {
   } while (running);
 
   teardown(*this);
+  SDL_GL_DeleteContext(gl_ctx);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+}
+
+
+void gl_debug_callback(GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const void* usr) {
+  clog << msg << endl;
+}
+
+void SDLGLWindow::enableDebugLogging()  {
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(gl_debug_callback, nullptr);
 }

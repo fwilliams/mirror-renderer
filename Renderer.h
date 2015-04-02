@@ -1,6 +1,10 @@
 #include <GL/glew.h>
+
+#include <iostream>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "utils/geometry.h"
 
@@ -8,9 +12,9 @@
 #define ENGINE_H_
 
 struct Light {
-  glm::vec4 pos = glm::vec4(0.0, 0.0, 0.0, 1.0);
-  glm::vec4 diffuse = glm::vec4(0.0, 0.0, 0.0, 1.0);
-  glm::vec4 specular = glm::vec4(0.0, 0.0, 0.0, 1.0);
+  glm::vec4 pos;
+  glm::vec4 diffuse;
+  glm::vec4 specular;
 };
 
 class Renderer {
@@ -24,30 +28,34 @@ class Renderer {
   const GLuint COLOR1_LOC = 2;
   const GLuint COLOR2_LOC = 3;
 
-  const GLuint NUM_LIGHTS = 10;
+  static const GLuint NUM_LIGHTS = 10;
 
-  Light* lights;
-  glm::mat4* matrices;
+  Light lights[NUM_LIGHTS];
+  glm::mat4 matrices[3];
 
-  inline glm::mat4* projection() {
-    return &matrices[0];
-  }
-
-  inline glm::mat4* view() {
-    return &matrices[1];
-  }
-
-  inline glm::mat4* normal() {
-    return &matrices[2];
-  }
+  glm::mat4* const proj_matrix = &matrices[1];
+  glm::mat4* const view_matrix = &matrices[0];
+  glm::mat4* const norm_matrix = &matrices[2];
 
 public:
   Renderer();
   virtual ~Renderer();
 
+  void startFrame() {
+    glBindBuffer(GL_UNIFORM_BUFFER, matrices_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4)*3, matrices, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, lights_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Light)*NUM_LIGHTS, lights, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  }
+
   void drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& geometry) {
-    glBindVertexArray(geometry.normal_view_vao);
     glUseProgram(draw_normals_program);
+    glBindVertexArray(geometry.normal_view_vao);
+    glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(baseColor));
+    glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(tailColor));
     glDrawArrays(GL_LINES, 0, geometry.num_vertices * 2);
     glBindVertexArray(0);
     glUseProgram(0);
@@ -60,6 +68,11 @@ public:
   }
 
   void draw(GLuint program, Geometry& geometry) {
+    *norm_matrix = glm::transpose(glm::inverse(glm::mat4(glm::mat3(*view_matrix))));
+    glBindBuffer(GL_UNIFORM_BUFFER, matrices_ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4)*2, sizeof(glm::mat4), norm_matrix);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
     glUseProgram(program);
     glBindVertexArray(geometry.vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.ibo);
@@ -69,7 +82,15 @@ public:
     glUseProgram(0);
   }
 
-  void setClearColor(glm::vec4& clearColor) {
+  inline const glm::mat4& projection() const {
+    return *proj_matrix;
+  }
+
+  inline const glm::mat4& view() const {
+    return *view_matrix;
+  }
+
+  void setClearColor(const glm::vec4& clearColor) {
     glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
   }
 
@@ -81,7 +102,7 @@ public:
     glDisable(GL_DEPTH_TEST);
   }
 
-  void setLightPos(GLuint light, glm::vec4& pos) {
+  void setLightPos(GLuint light, const glm::vec4& pos) {
     lights[light].pos = pos;
   }
 
@@ -105,20 +126,24 @@ public:
     // TODO: Implement enabling disabling of lights
   }
 
-  void setViewMatrix(glm::mat4& matrix) {
-    *view() = matrix;
+  void setViewMatrix(const glm::mat4& matrix) {
+    *view_matrix = matrix;
+  }
+
+  void setViewLookat(const glm::vec3& eye, const glm::vec3& ctr, const glm::vec3& up) {
+    *view_matrix = glm::lookAt(eye, ctr, up);
   }
 
   void setPerspectiveProjection(GLfloat fov_y, GLfloat aspect, GLfloat near_z, GLfloat far_z) {
-    *projection() = glm::perspective(fov_y, aspect, near_z, far_z);
+    *proj_matrix = glm::perspective(fov_y, aspect, near_z, far_z);
   }
 
   void setPerspectiveProjection(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat near, GLfloat far) {
-    *projection() = glm::frustum(left, right, bottom, top, near, far);
+    *proj_matrix = glm::frustum(left, right, bottom, top, near, far);
   }
 
   void setOrthographicProjection(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat near, GLfloat far) {
-    *projection() = glm::ortho(left, right, bottom, top, near, far);
+    *proj_matrix = glm::ortho(left, right, bottom, top, near, far);
   }
 };
 
