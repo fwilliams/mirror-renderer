@@ -73,24 +73,26 @@ void Renderer::drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& g
   glUseProgram(0);
 }
 
-void Renderer::drawWireframe(GLuint program, Geometry& geometry) {
+void Renderer::drawWireframe(Geometry& geometry) {
   glPolygonMode(GL_FRONT_FACE, GL_LINE);
-  draw(program, geometry);
+  draw(geometry);
   glPolygonMode(GL_FRONT_FACE, GL_FILL);
 }
 
-void Renderer::draw(GLuint program, Geometry& geometry) {
+void Renderer::draw(Geometry& geometry) {
   perFrameData.normal_matrix = glm::transpose(glm::inverse(glm::mat4(glm::mat3(view()))));
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
   glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4),
       &perFrameData.normal_matrix);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-  glUseProgram(program);
   glBindVertexArray(geometry.vao);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.ibo);
   glDrawElements(GL_TRIANGLES, geometry.num_indices, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glUseProgram(0);
+}
+
+void Renderer::setProgram(GLuint program) {
+  glUseProgram(program);
 }

@@ -102,8 +102,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   void draw(SDLGLWindow& w) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     rndr->startFrame();
-    rndr->draw(phongProgram, sphere_mesh);
-    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0), sphere_mesh);
+    rndr->setProgram(phongProgram);
+    rndr->draw(sphere_mesh);
   }
 };
 

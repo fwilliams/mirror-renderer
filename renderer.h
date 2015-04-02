@@ -46,9 +46,11 @@ public:
 
   void drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& geometry);
 
-  void drawWireframe(GLuint program, Geometry& geometry);
+  void drawWireframe(Geometry& geometry);
 
-  void draw(GLuint program, Geometry& geometry);
+  void draw(Geometry& geometry);
+
+  void setProgram(GLuint program);
 
   inline const glm::mat4& projection() const {
     return perFrameData.proj_matrix;
