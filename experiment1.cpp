@@ -21,8 +21,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   Geometry sphere_mesh;
   GLuint phongProgram = 0;
 
-  vec4 ambientColor;
-
   Material sphere_material;
   Renderer* rndr = nullptr;
 
