@@ -152,11 +152,8 @@ public:
 
     // Cache of cosine and sine of each phi sample for reuse in inner loop
     double* cos_sin_phi[2];
-    {
-      double* arr = new double[2*phi_samples];
-      cos_sin_phi[0] = arr;
-      cos_sin_phi[1] = &arr[phi_samples];
-    }
+    cos_sin_phi[0] = new double[2*phi_samples];
+    cos_sin_phi[1] = &(cos_sin_phi[0][phi_samples]);
 
 
     // Set the position of the top vertex
@@ -231,6 +228,7 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+    delete cos_sin_phi[0];
     return ret;
   }
 };

@@ -60,11 +60,7 @@ public:
     running = false;
   }
 
-  virtual ~SDLGLWindow() {
-    SDL_GL_DeleteContext(gl_ctx);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-  }
+  virtual ~SDLGLWindow();
 };
 
 #endif /* SDL_GL_HELPER_H_ */

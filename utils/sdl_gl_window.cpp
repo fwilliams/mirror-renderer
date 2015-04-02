@@ -28,6 +28,12 @@ SDLGLWindow::SDLGLWindow(size_t width, size_t height) :
   }
 }
 
+SDLGLWindow::~SDLGLWindow() {
+  SDL_GL_DeleteContext(gl_ctx);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+}
+
 void SDLGLWindow::mainLoop() {
   running = true;
 
@@ -47,9 +53,6 @@ void SDLGLWindow::mainLoop() {
   } while (running);
 
   teardown(*this);
-  SDL_GL_DeleteContext(gl_ctx);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
 }
 
 

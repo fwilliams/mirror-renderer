@@ -52,6 +52,10 @@ public:
 
   void setProgram(GLuint program);
 
+  void clearViewPort() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  }
+
   inline const glm::mat4& projection() const {
     return perFrameData.proj_matrix;
   }
