@@ -12,12 +12,12 @@ struct Material {
 	float shine_exp;
 };
 
-layout(location = 3) uniform Material material;
-layout(location = 6) uniform vec4 ambient;
-
-layout(std140, binding = 2) uniform LightBlock {
+layout(std140, binding=2) uniform PerFrameLightingBlock {
+	vec4 global_ambient;
 	Light lights[10];
 };
+
+layout(location = 3) uniform Material material;
 
 smooth in vec4 v_position;
 smooth in vec3 v_normal;
@@ -26,7 +26,7 @@ smooth in vec2 v_texcoord;
 out vec4 fragcolor;
 
 void main() {
-	fragcolor = ambient;
+	fragcolor = global_ambient;
 
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < lights.length(); i++) {

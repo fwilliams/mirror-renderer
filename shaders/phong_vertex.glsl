@@ -1,10 +1,10 @@
 #version 430
 
-layout(std140, binding=1) uniform MatrixBlock {
+layout(std140, binding=1) uniform PerFrameMatrixBlock {
 	mat4 modelview;
 	mat4 projection;
 	mat4 normal;
-} matrices;
+};
 
 in vec4 in_position;
 in vec3 in_normal;
@@ -15,8 +15,8 @@ smooth out vec3 v_normal;
 smooth out vec2 v_texcoord;
 
 void main() {
-	v_position = matrices.modelview * in_position;
-	v_normal = mat3(matrices.normal) * in_normal;
+	v_position = modelview * in_position;
+	v_normal = mat3(normal) * in_normal;
 	v_texcoord = in_texcoord;
-	gl_Position =  matrices.projection * matrices.modelview * in_position;
+	gl_Position =  projection * modelview * in_position;
 }

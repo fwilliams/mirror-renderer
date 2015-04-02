@@ -3,10 +3,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
+#include "renderer.h"
 #include "utils/sdl_gl_window.h"
 #include "utils/gl_program_builder.h"
 #include "utils/gl_utils.h"
-#include "Renderer.h"
 
 using namespace glm;
 using namespace std;
@@ -29,8 +29,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   const GLuint MATERIAL_LOC = 3;
   const GLuint AMBIENT_LOC = 6;
   const GLuint LIGHTS_LOC = 7;
-
-  const GLuint NUM_LIGHTS = 10;
 
   SimpleMirrorGLWindow(size_t w, size_t h) :
       SDLGLWindow(w, h) {
@@ -65,7 +63,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
         vec4 offset((i-1)*squareSize.x/2.0, 0.0, (j-1)*squareSize.y/2.0, 0.0);
-        cout << to_string(offset) << endl;
         rndr->setLight(3*i + j, l1);
         rndr->setLightPos(3*i + j, rndr->view() * (center + offset));
       }
@@ -79,9 +76,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Set uniforms for lighting program
     glUseProgram(phongProgram);
-
-    ambientColor = vec4(0.0, 0.05, 0.05, 1.0);
-    glUniform4fv(AMBIENT_LOC, 1, value_ptr(ambientColor));
 
     // Setup material
     sphere_material.diffuse = vec4(0.4, 0.6, 0.7, 1.0);
@@ -111,7 +105,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     rndr->startFrame();
     rndr->draw(phongProgram, sphere_mesh);
-    // rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0), sphere_mesh);
+    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0), sphere_mesh);
   }
 };
 
