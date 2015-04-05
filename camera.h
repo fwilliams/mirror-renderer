@@ -6,7 +6,7 @@
 
 class Camera {
   glm::quat orientation;
-  glm::vec3 lookat;
+  glm::vec3 lookat = glm::vec3(0.0, 0.0, 1.0);
   glm::vec3 position;
   glm::mat4 proj_mat;
 public:
@@ -19,6 +19,8 @@ public:
 
   void transform(const glm::mat4& transformation);
   void advance(float distance);
+  void strafeRight(float amount);
+  void strafeUp(float amount);
 
   void setPosition(const glm::vec3& position);
   void setOrientation(const glm::vec3& direction);
@@ -29,6 +31,8 @@ public:
   glm::mat4 getViewMatrix() const;
   glm::mat4 getProjectionMatrix() const;
   glm::vec3 getLookatVector() const;
+  glm::vec3 getUpVector() const;
+  glm::vec3 getRightVector() const;
   glm::vec3 getPosition() const;
 };
 

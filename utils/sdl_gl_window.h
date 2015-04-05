@@ -56,6 +56,10 @@ public:
 
   void mainLoop();
 
+  void showCursor(bool visible);
+
+  void setMousePosition(int x, int y);
+
   void close() {
     running = false;
   }

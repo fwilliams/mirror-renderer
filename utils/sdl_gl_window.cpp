@@ -55,6 +55,13 @@ void SDLGLWindow::mainLoop() {
   teardown(*this);
 }
 
+void SDLGLWindow::setMousePosition(int x, int y) {
+  SDL_WarpMouseInWindow(window, x, y);
+}
+
+void SDLGLWindow::showCursor(bool toggle) {
+  SDL_ShowCursor(toggle);
+}
 
 void gl_debug_callback(GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const void* usr) {
   clog << msg << endl;

@@ -59,13 +59,13 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     Light l1 = {vec4(0.0),
                 vec4(0.15, 0.15, 0.15, 1.0),
                 vec4(0.75, 0.75, 0.75, 1.0) };
-    vec4 center(0.0, 55.0, 0.0, 1.0);
+    vec4 center(0.0, 55.0, -50.0, 1.0);
     vec2 squareSize(30.0);
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
         vec4 offset((i-1)*squareSize.x/2.0, 0.0, (j-1)*squareSize.y/2.0, 0.0);
         rndr->setLight(3*i + j, l1);
-        rndr->setLightPos(3*i + j, rndr->view() * (center + offset));
+        rndr->setLightPos(3*i + j, (center + offset));
       }
     }
 
@@ -90,9 +90,66 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Setup uniforms for drawing normals
     glUseProgram(0);
+
+    setMousePosition(w.width()/2, w.height()/2);
+    showCursor(false);
+  }
+
+  void updateCameraOrientation() {
+    ivec2 mousePos;
+    SDL_GetMouseState(&mousePos.x, &mousePos.y);
+    mousePos = mousePos - ivec2(width(), height()) / 2;
+    vec2 normalizeMousePos = vec2(mousePos) / (vec2(width(), height()) / 2.0f);
+
+    vec2 fov = vec2(45.0, 45.0*aspectRatio()) / 2.0f;
+    vec2 angular = fov * normalizeMousePos;
+    setMousePosition(width()/2, height()/2);
+
+    vec2 rotationScale = 0.01f * vec2(1.0, aspectRatio());
+    camera.rotateX(-angular.y * rotationScale.y);
+    camera.rotateY(-angular.x * rotationScale.x);
+  }
+
+  struct CameraMovingState {
+    vec3 velocity = vec3(0.0);
+  } camState;
+
+  void handle_event(SDLGLWindow& w, const SDL_Event& event) {
+    if(event.type == SDL_KEYDOWN) {
+      if(event.key.keysym.sym == SDLK_w) {
+        camState.velocity.z = 0.1;
+      }
+      if(event.key.keysym.sym == SDLK_s) {
+        camState.velocity.z = -0.1;
+      }
+      if(event.key.keysym.sym == SDLK_d) {
+        camState.velocity.x = 0.1;
+      }
+      if(event.key.keysym.sym == SDLK_a) {
+        camState.velocity.x = -0.1;
+      }
+    }
+
+    if(event.type == SDL_KEYUP) {
+      if(event.key.keysym.sym == SDLK_w) {
+        camState.velocity.z = 0.0;
+      }
+      if(event.key.keysym.sym == SDLK_s) {
+        camState.velocity.z = 0.0;
+      }
+      if(event.key.keysym.sym == SDLK_d) {
+        camState.velocity.x = 0.0;
+      }
+      if(event.key.keysym.sym == SDLK_a) {
+        camState.velocity.x = 0.0;
+      }
+    }
   }
 
   void update(SDLGLWindow& w) {
+    updateCameraOrientation();
+    camera.advance(camState.velocity.z);
+    camera.strafeRight(camState.velocity.x);
     rndr->setProjectionMatrix(camera.getProjectionMatrix());
     rndr->setViewMatrix(camera.getViewMatrix());
   }

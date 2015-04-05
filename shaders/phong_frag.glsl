@@ -12,6 +12,13 @@ struct Material {
 	float shine_exp;
 };
 
+
+layout(std140, binding=1) uniform PerFrameMatrixBlock {
+	mat4 modelview;
+	mat4 projection;
+	mat4 normal;
+};
+
 layout(std140, binding=2) uniform PerFrameLightingBlock {
 	vec4 global_ambient;
 	Light lights[10];
@@ -30,14 +37,13 @@ void main() {
 
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < lights.length(); i++) {
-		vec3 dir_to_light = normalize(vec3(lights[i].position - v_position));
+		vec4 view_space_light_pos = modelview * lights[i].position;
+		vec3 dir_to_light = normalize(vec3(view_space_light_pos - v_position));
 		vec3 reflection_dir = normalize(reflect(-dir_to_light, normal));
 		vec3 dir_to_viewer = normalize(-v_position).xyz;
 		
 		vec3 h = normalize(dir_to_light + dir_to_viewer);
-		float h_dot_n = clamp(dot(h, normal), 0.0, 1.0);
-		float r_dot_v = clamp(dot(reflection_dir, dir_to_viewer), 0.0, 1.0);
-		
+		float h_dot_n = clamp(dot(h, normal), 0.0, 1.0);		
 		
 		float diffuse = clamp(dot(dir_to_light, normal), 0.0, 1.0);		
 		float specular = pow(h_dot_n, material.shine_exp);
