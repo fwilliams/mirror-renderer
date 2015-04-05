@@ -112,24 +112,8 @@ public:
     perFrameData.view_matrix = matrix;
   }
 
-  void setViewLookat(const glm::vec3& eye, const glm::vec3& ctr, const glm::vec3& up) {
-    perFrameData.view_matrix = glm::lookAt(eye, ctr, up);
-  }
-
   void setProjectionMatrix(const glm::mat4& matrix) {
     perFrameData.proj_matrix = matrix;
-  }
-
-  void setPerspectiveProjection(GLfloat fov_y, GLfloat aspect, GLfloat near_z, GLfloat far_z) {
-    perFrameData.proj_matrix = glm::perspective(fov_y, aspect, near_z, far_z);
-  }
-
-  void setPerspectiveProjection(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat near, GLfloat far) {
-    perFrameData.proj_matrix = glm::frustum(left, right, bottom, top, near, far);
-  }
-
-  void setOrthographicProjection(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat near, GLfloat far) {
-    perFrameData.proj_matrix = glm::ortho(left, right, bottom, top, near, far);
   }
 };
 

@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "renderer.h"
+#include "camera.h"
 #include "utils/sdl_gl_window.h"
 #include "utils/gl_program_builder.h"
 #include "utils/gl_utils.h"
@@ -18,6 +19,8 @@ struct Material {
 };
 
 struct SimpleMirrorGLWindow: SDLGLWindow {
+  Camera camera;
+
   Geometry sphere_mesh;
   GLuint phongProgram = 0;
 
@@ -47,10 +50,10 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     sphere_mesh = Geometry::make_sphere(1.5, 55, 55);
 
 
-    // Setup view and projection transformations
-    rndr->setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 1000.0);
-    rndr->setViewLookat(vec3(0.0, 0.2, 4.5), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
-
+    // Setup the camera
+    camera.setOrientation(vec3(0.0, 0.0, -1.0));
+    camera.setPosition(vec3(0.0, 0.0, 4.5));
+    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 1000.0);
 
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
@@ -87,6 +90,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Setup uniforms for drawing normals
     glUseProgram(0);
+  }
+
+  void update(SDLGLWindow& w) {
+    rndr->setProjectionMatrix(camera.getProjectionMatrix());
+    rndr->setViewMatrix(camera.getViewMatrix());
   }
 
   void teardown(SDLGLWindow& w) {
