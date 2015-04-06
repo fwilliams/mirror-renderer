@@ -51,7 +51,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
 
     // Setup the camera
-    camera.setOrientation(vec3(0.0, 0.0, -1.0));
+    camera.setLookat(vec3(0.0, 0.0, -1.0));
     camera.setPosition(vec3(0.0, 0.0, 4.5));
     camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 1000.0);
 
@@ -59,7 +59,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     Light l1 = {vec4(0.0),
                 vec4(0.15, 0.15, 0.15, 1.0),
                 vec4(0.75, 0.75, 0.75, 1.0) };
-    vec4 center(0.0, 55.0, -50.0, 1.0);
+    vec4 center(0.0, 30.0, 10.0, 1.0);
     vec2 squareSize(30.0);
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
@@ -69,7 +69,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       }
     }
 
-    Light l2 = {rndr->view() * vec4(0.0, 0.0, 15.0, 1.0),
+    Light l2 = {vec4(0.0, 0.0, 15.0, 1.0),
                 vec4(0.55, 0.95, 0.55, 1.0),
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->setLight(9, l2);
@@ -85,7 +85,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     sphere_material.specular = vec4(0.6, 0.4, 0.3, 1.0);
     glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphere_material.specular));
 
-    sphere_material.shine = 500.0f;
+    sphere_material.shine = 250.0f;
     glUniform1f(MATERIAL_LOC + 2, sphere_material.shine);
 
     // Setup uniforms for drawing normals
@@ -106,8 +106,10 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     setMousePosition(width()/2, height()/2);
 
     vec2 rotationScale = 0.01f * vec2(1.0, aspectRatio());
-    camera.rotateX(-angular.y * rotationScale.y);
-    camera.rotateY(-angular.x * rotationScale.x);
+    camera.rotateXY(vec2(-angular.y * rotationScale.y, -angular.x * rotationScale.x));
+//
+//    camera.rotateX(-angular.y * rotationScale.y);
+//    camera.rotateY(-angular.x * rotationScale.x);
   }
 
   struct CameraMovingState {
@@ -169,6 +171,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->startFrame();
     rndr->setProgram(phongProgram);
     rndr->draw(sphere_mesh);
+    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), sphere_mesh);
   }
 };
 

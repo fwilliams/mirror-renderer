@@ -16,6 +16,9 @@ Camera::~Camera() {
   // TODO Auto-generated destructor stub
 }
 
+void Camera::rotateXY(vec2 angles) {
+  orientation = orientation * quat(vec3(angles, 0.0));
+}
 void Camera::rotateX(float angle) {
   orientation = orientation * quat(vec3(angle, 0.0, 0.0));
 }
@@ -40,7 +43,7 @@ void Camera::strafeUp(float amount) {
   position += getUpVector() * amount;
 }
 
-void Camera::setOrientation(const vec3& lookat) {
+void Camera::setLookat(const vec3& lookat) {
   orientation = quat(1.0, vec3(0.0));
   this->lookat = lookat;
 }
@@ -65,10 +68,7 @@ void Camera::setPerspectiveProjection(float fov_y, float aspect, float near_z,
 }
 
 mat4 Camera::getViewMatrix() const {
-  mat3 orientation_mat = mat3_cast(orientation);
-  vec3 lookat_dir = orientation_mat * lookat;
-  vec3 up = orientation_mat * vec3(0.0, 1.0, 0.0);
-  return lookAt(position, position + lookat_dir, up);
+  return lookAt(position, position + getLookatVector(), getUpVector());
 }
 
 mat4 Camera::getProjectionMatrix() const {
@@ -76,15 +76,15 @@ mat4 Camera::getProjectionMatrix() const {
 }
 
 vec3 Camera::getLookatVector() const {
-  return mat3_cast(orientation) * lookat;
+  return orientation * lookat;
 }
 
 vec3 Camera::getUpVector() const {
-  return mat3_cast(orientation) * vec3(0.0, 1.0, 0.0);
+  return normalize(orientation * vec3(0.0, 1.0, 0.0));
 }
 
 vec3 Camera::getRightVector() const {
-  return cross(getUpVector(), getLookatVector());
+  return normalize(cross(getLookatVector(), getUpVector()));
 }
 
 vec3 Camera::getPosition() const {

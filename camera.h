@@ -16,6 +16,7 @@ public:
   void rotateX(float angle);
   void rotateY(float angle);
   void rotateZ(float angle);
+  void rotateXY(glm::vec2 angles);
 
   void transform(const glm::mat4& transformation);
   void advance(float distance);
@@ -23,7 +24,7 @@ public:
   void strafeUp(float amount);
 
   void setPosition(const glm::vec3& position);
-  void setOrientation(const glm::vec3& direction);
+  void setLookat(const glm::vec3& direction);
   void setPerspectiveProjection(float left, float right, float bottom, float top, float near, float far);
   void setPerspectiveProjection(float fov_y, float aspect, float near_z, float far_z);
   void setOrthographicProjection(float left, float right, float bottom, float top, float near, float far);

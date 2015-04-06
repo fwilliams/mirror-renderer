@@ -37,11 +37,12 @@ void main() {
 
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < lights.length(); i++) {
-		vec4 view_space_light_pos = modelview * lights[i].position;
+		vec4 view_space_light_pos =  modelview * lights[i].position;
 		vec3 dir_to_light = normalize(vec3(view_space_light_pos - v_position));
-		vec3 reflection_dir = normalize(reflect(-dir_to_light, normal));
 		vec3 dir_to_viewer = normalize(-v_position).xyz;
-		
+		// vec3 reflection_dir = normalize(reflect(-dir_to_light, normal));
+		//float r_dot_v = clamp(dot(reflection_dir, dir_to_viewer), 0.0, 1.0);
+		 
 		vec3 h = normalize(dir_to_light + dir_to_viewer);
 		float h_dot_n = clamp(dot(h, normal), 0.0, 1.0);		
 		
