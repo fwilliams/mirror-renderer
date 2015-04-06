@@ -106,10 +106,9 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     setMousePosition(width()/2, height()/2);
 
     vec2 rotationScale = 0.01f * vec2(1.0, aspectRatio());
-    camera.rotateXY(vec2(-angular.y * rotationScale.y, -angular.x * rotationScale.x));
-//
-//    camera.rotateX(-angular.y * rotationScale.y);
-//    camera.rotateY(-angular.x * rotationScale.x);
+
+    camera.rotateY(-angular.x * rotationScale.x);
+    camera.rotateX(-angular.y * rotationScale.y);
   }
 
   struct CameraMovingState {
