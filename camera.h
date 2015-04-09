@@ -5,16 +5,12 @@
 #define CAMERA_H_
 
 class Camera {
-  glm::quat orientation = glm::quat(1.0, glm::vec3(0.0));
-  glm::vec3 lookat = glm::vec3(0.0, 0.0, -1.0);
-  glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
-  glm::vec3 position;
-
+  glm::quat orientation = glm::quat(1.0, glm::vec3(0.0, 0.0, 0.0));
+  glm::vec3 lookat = glm::vec3(0.0, 0.0, 1.0);
+  glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);
   glm::mat4 proj_mat;
-public:
-  Camera();
-  virtual ~Camera();
 
+public:
   void rotateX(float angle);
   void rotateY(float angle);
   void rotateZ(float angle);

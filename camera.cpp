@@ -8,28 +8,16 @@
 using namespace std;
 using namespace glm;
 
-Camera::Camera() {
-  // TODO Auto-generated constructor stub
-
-}
-
-Camera::~Camera() {
-  // TODO Auto-generated destructor stub
-}
-
 void Camera::rotateX(float angle) {
   orientation = rotate(orientation, angle, vec3(1.0, 0.0, 0.0));
-  up = up * quat(angle, vec3(0.0, 1.0, 0.0));
 }
 
 void Camera::rotateY(float angle) {
   orientation = rotate(orientation, angle, vec3(0.0, 1.0, 0.0));
-  up = up * quat(angle, vec3(0.0, 1.0, 0.0));
 }
 
 void Camera::rotateZ(float angle) {
   orientation = rotate(orientation, angle, vec3(0.0, 0.0, 1.0));
-  up = up * quat(angle, vec3(0.0, 0.0, 1.0));
 }
 
 void Camera::advance(float amount) {
@@ -81,7 +69,7 @@ vec3 Camera::getLookatVector() const {
 }
 
 vec3 Camera::getUpVector() const {
-  return up;
+  return orientation * vec3(0.0, 1.0, 0.0);
 }
 
 vec3 Camera::getRightVector() const {

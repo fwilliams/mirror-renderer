@@ -20,6 +20,7 @@ struct Material {
 
 struct SimpleMirrorGLWindow: SDLGLWindow {
   Camera camera;
+  vec3 cameraVelocity;
 
   Geometry sphere_mesh;
   GLuint phongProgram = 0;
@@ -28,8 +29,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   Renderer* rndr = nullptr;
 
   const GLuint MATERIAL_LOC = 3;
-  const GLuint AMBIENT_LOC = 6;
-  const GLuint LIGHTS_LOC = 7;
 
   SimpleMirrorGLWindow(size_t w, size_t h) :
       SDLGLWindow(w, h) {
@@ -58,9 +57,9 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
                 vec4(0.15, 0.15, 0.15, 1.0),
-                vec4(0.75, 0.75, 0.75, 1.0) };
-    vec4 center(0.0, 30.0, 10.0, 1.0);
-    vec2 squareSize(30.0);
+                vec4(0.25, 0.25, 0.25, 1.0) };
+    vec4 center(0.0, 3.0, 5.0, 1.0);
+    vec2 squareSize(2.5);
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
         vec4 offset((i-1)*squareSize.x/2.0, 0.0, (j-1)*squareSize.y/2.0, 0.0);
@@ -103,54 +102,51 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     vec2 fov = vec2(45.0, 45.0*aspectRatio()) / 2.0f;
     vec2 angular = fov * normalizeMousePos;
+
+    angular = -angular;
     setMousePosition(width()/2, height()/2);
 
-    vec2 rotationScale = 0.01f * vec2(1.0, aspectRatio());
-
-    camera.rotateY(-angular.x * rotationScale.x);
-    camera.rotateX(-angular.y * rotationScale.y);
+    vec2 rotationScale = 0.0075f * vec2(1.0, aspectRatio());
+    camera.rotateX(angular.y * rotationScale.y);
+    camera.rotateY(angular.x * rotationScale.x);
   }
-
-  struct CameraMovingState {
-    vec3 velocity = vec3(0.0);
-  } camState;
 
   void handle_event(SDLGLWindow& w, const SDL_Event& event) {
     if(event.type == SDL_KEYDOWN) {
       if(event.key.keysym.sym == SDLK_w) {
-        camState.velocity.z = 0.1;
+        cameraVelocity.z = 0.1;
       }
       if(event.key.keysym.sym == SDLK_s) {
-        camState.velocity.z = -0.1;
+        cameraVelocity.z = -0.1;
       }
       if(event.key.keysym.sym == SDLK_d) {
-        camState.velocity.x = 0.1;
+        cameraVelocity.x = 0.1;
       }
       if(event.key.keysym.sym == SDLK_a) {
-        camState.velocity.x = -0.1;
+        cameraVelocity.x = -0.1;
       }
     }
 
     if(event.type == SDL_KEYUP) {
       if(event.key.keysym.sym == SDLK_w) {
-        camState.velocity.z = 0.0;
+        cameraVelocity.z = 0.0;
       }
       if(event.key.keysym.sym == SDLK_s) {
-        camState.velocity.z = 0.0;
+        cameraVelocity.z = 0.0;
       }
       if(event.key.keysym.sym == SDLK_d) {
-        camState.velocity.x = 0.0;
+        cameraVelocity.x = 0.0;
       }
       if(event.key.keysym.sym == SDLK_a) {
-        camState.velocity.x = 0.0;
+        cameraVelocity.x = 0.0;
       }
     }
   }
 
   void update(SDLGLWindow& w) {
     updateCameraOrientation();
-    camera.advance(camState.velocity.z);
-    camera.strafeRight(camState.velocity.x);
+    camera.advance(cameraVelocity.z);
+    camera.strafeRight(cameraVelocity.x);
     rndr->setProjectionMatrix(camera.getProjectionMatrix());
     rndr->setViewMatrix(camera.getViewMatrix());
   }
