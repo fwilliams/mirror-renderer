@@ -20,6 +20,10 @@ void Camera::rotateZ(float angle) {
   orientation = rotate(orientation, angle, vec3(0.0, 0.0, 1.0));
 }
 
+void Camera::setRotationAngles(const glm::vec3& angles) {
+  orientation = quat(angles);
+}
+
 void Camera::advance(float amount) {
   position += getLookatVector() * amount;
 }

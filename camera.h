@@ -15,6 +15,8 @@ public:
   void rotateY(float angle);
   void rotateZ(float angle);
 
+  void setRotationAngles(const glm::vec3& angles);
+
   void transform(const glm::mat4& transformation);
   void advance(float distance);
   void strafeRight(float amount);

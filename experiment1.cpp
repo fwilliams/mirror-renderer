@@ -20,7 +20,10 @@ struct Material {
 
 struct SimpleMirrorGLWindow: SDLGLWindow {
   Camera camera;
+
+  const float FOV_Y = 45.0f;
   vec3 cameraVelocity;
+  vec2 cameraSphericalCoords;
 
   Geometry sphere_mesh;
   GLuint phongProgram = 0;
@@ -50,9 +53,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
 
     // Setup the camera
-    camera.setLookat(vec3(0.0, 0.0, -1.0));
-    camera.setPosition(vec3(0.0, 0.0, 4.5));
-    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 1000.0);
+    camera.setPosition(vec3(0.0, 0.0, -4.5));
+    camera.setPerspectiveProjection(FOV_Y, w.aspectRatio(), 0.5, 1000.0);
 
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
@@ -87,7 +89,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     sphere_material.shine = 250.0f;
     glUniform1f(MATERIAL_LOC + 2, sphere_material.shine);
 
-    // Setup uniforms for drawing normals
     glUseProgram(0);
 
     setMousePosition(w.width()/2, w.height()/2);
@@ -95,20 +96,30 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 
   void updateCameraOrientation() {
+    // Get the coordinates of the cursor with respect to the top left corner of the screen
     ivec2 mousePos;
     SDL_GetMouseState(&mousePos.x, &mousePos.y);
-    mousePos = mousePos - ivec2(width(), height()) / 2;
-    vec2 normalizeMousePos = vec2(mousePos) / (vec2(width(), height()) / 2.0f);
 
-    vec2 fov = vec2(45.0, 45.0*aspectRatio()) / 2.0f;
-    vec2 angular = fov * normalizeMousePos;
-
-    angular = -angular;
+    // Reset the cursor position to the middle of the screen
     setMousePosition(width()/2, height()/2);
 
-    vec2 rotationScale = 0.0075f * vec2(1.0, aspectRatio());
-    camera.rotateX(angular.y * rotationScale.y);
-    camera.rotateY(angular.x * rotationScale.x);
+    // Transform mouse coordinates so (0, 0) is the center of the screen, y is up, and x is right
+    mousePos = ivec2(-1, 1) * (mousePos - (ivec2(width(), height()) / 2));
+
+    // Normalize mouse position
+    const vec2 normalizedMousePos = vec2(mousePos.y, mousePos.x) / vec2(height(), width()) / 2.0f;
+    vec2 dCamSphericalPos = normalizedMousePos * vec2(FOV_Y*aspectRatio(), FOV_Y) / 2.0f;
+    dCamSphericalPos = radians(dCamSphericalPos);
+    cameraSphericalCoords += dCamSphericalPos;
+
+    // Don't let the user rotate up and down more than 90 degrees
+    cameraSphericalCoords.x = clamp(cameraSphericalCoords.x, -half_pi<float>(), half_pi<float>());
+
+    // Keep the camera y angle in the range (0, 360) degrees to prevent floating point errors
+    cameraSphericalCoords.y = mod(cameraSphericalCoords.y, two_pi<float>());
+
+    // Set the orientation of the camera based on the stored angles
+    camera.setRotationAngles(vec3(cameraSphericalCoords.x, cameraSphericalCoords.y, 0.0));
   }
 
   void handle_event(SDLGLWindow& w, const SDL_Event& event) {
