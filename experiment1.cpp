@@ -25,10 +25,12 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   vec3 cameraVelocity;
   vec2 cameraSphericalCoords;
 
-  Geometry sphere_mesh;
+  Geometry sphereMesh;
+  Geometry cubeMesh;
+
   GLuint phongProgram = 0;
 
-  Material sphere_material;
+  Material sphereMaterial;
   Renderer* rndr = nullptr;
 
   const GLuint MATERIAL_LOC = 3;
@@ -48,8 +50,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
-    sphere_mesh = Geometry::make_cube(vec3(2.0));//Geometry::make_sphere(1.5, 55, 55);
-
+    sphereMesh = Geometry::make_sphere(1.5, 55, 55);
+    cubeMesh = Geometry::make_cube(vec3(0.025), false);
 
     // Setup the camera
     camera.setPosition(vec3(0.0, 0.0, -4.5));
@@ -79,14 +81,14 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glUseProgram(phongProgram);
 
     // Setup material
-    sphere_material.diffuse = vec4(0.4, 0.6, 0.7, 1.0);
-    glUniform4fv(MATERIAL_LOC, 1, value_ptr(sphere_material.diffuse));
+    sphereMaterial.diffuse = vec4(0.4, 0.6, 0.7, 1.0);
+    glUniform4fv(MATERIAL_LOC, 1, value_ptr(sphereMaterial.diffuse));
 
-    sphere_material.specular = vec4(0.6, 0.4, 0.3, 1.0);
-    glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphere_material.specular));
+    sphereMaterial.specular = vec4(0.6, 0.4, 0.3, 1.0);
+    glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphereMaterial.specular));
 
-    sphere_material.shine = 250.0f;
-    glUniform1f(MATERIAL_LOC + 2, sphere_material.shine);
+    sphereMaterial.shine = 250.0f;
+    glUniform1f(MATERIAL_LOC + 2, sphereMaterial.shine);
 
     glUseProgram(0);
 
@@ -163,11 +165,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   void teardown(SDLGLWindow& w) {
     delete rndr;
-    glDeleteBuffers(1, &sphere_mesh.vbo);
-    glDeleteBuffers(1, &sphere_mesh.ibo);
-    glDeleteBuffers(1, &sphere_mesh.normal_view_vbo);
-    glDeleteVertexArrays(1, &sphere_mesh.vao);
-    glDeleteVertexArrays(1, &sphere_mesh.normal_view_vao);
+    glDeleteBuffers(1, &sphereMesh.vbo);
+    glDeleteBuffers(1, &sphereMesh.ibo);
+    glDeleteBuffers(1, &sphereMesh.normal_view_vbo);
+    glDeleteVertexArrays(1, &sphereMesh.vao);
+    glDeleteVertexArrays(1, &sphereMesh.normal_view_vao);
     glDeleteProgram(phongProgram);
   }
 
@@ -175,9 +177,15 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->clearViewPort();
     rndr->startFrame();
     rndr->setProgram(phongProgram);
-    rndr->draw(sphere_mesh);
-    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), sphere_mesh);
-  }
+    rndr->draw(sphereMesh);
+    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), sphereMesh);
+
+    for(size_t i = 0; i < rndr->numLights(); i++) {
+      // TODO: Model matrix
+      rndr->draw(cubeMesh);
+      rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), cubeMesh);
+    }
+   }
 };
 
 int main(int argc, char** argv) {

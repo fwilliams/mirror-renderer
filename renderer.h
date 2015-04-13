@@ -68,6 +68,10 @@ public:
     return perFrameData.global_ambient;
   }
 
+  inline size_t numLights() const {
+    return NUM_LIGHTS;
+  }
+
   void setClearColor(const glm::vec4& clearColor) {
     glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
   }
