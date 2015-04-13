@@ -1,10 +1,17 @@
 #include <GL/glew.h>
 #include <stdio.h>
+
 #include <vector>
+#include <array>
+#include <algorithm>
 #include <type_traits>
+#include <iostream>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+#include "gl_utils.h"
 
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
@@ -82,6 +89,75 @@ public:
         verts[j]->normal = glm::normalize((verts[j]->normal + normal) / 2.0f);
       }
     }
+  }
+
+  static Geometry make_cube(const glm::vec3& scale, bool invertNormals = false) {
+    Geometry ret(8, 36);
+    glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    glBindBuffer(GL_ARRAY_BUFFER, ret.ibo);
+    GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
+
+
+    const float normalScale = invertNormals ? -1.0 : 1.0;
+    const glm::vec4 v4scale(scale, 1.0);
+
+    const std::array<glm::vec4, 8> verts {
+      glm::vec4(-0.5, -0.5,  0.5, 1.0),
+      glm::vec4( 0.5, -0.5,  0.5, 1.0),
+      glm::vec4( 0.5,  0.5,  0.5, 1.0),
+      glm::vec4(-0.5,  0.5,  0.5, 1.0),
+      glm::vec4(-0.5, -0.5, -0.5, 1.0),
+      glm::vec4( 0.5, -0.5, -0.5, 1.0),
+      glm::vec4( 0.5,  0.5, -0.5, 1.0),
+      glm::vec4(-0.5,  0.5, -0.5, 1.0)
+    };
+
+    const std::array<glm::vec3, 8> norms {
+      glm::vec3(-0.577350, -0.577350,  0.577350),
+      glm::vec3( 0.577350, -0.577350,  0.577350),
+      glm::vec3( 0.577350,  0.577350,  0.577350),
+      glm::vec3(-0.577350,  0.577350,  0.577350),
+      glm::vec3(-0.577350, -0.577350, -0.577350),
+      glm::vec3( 0.577350, -0.577350, -0.577350),
+      glm::vec3( 0.577350,  0.577350, -0.577350),
+      glm::vec3(-0.577350,  0.577350, -0.577350),
+    };
+
+    const std::array<GLuint, 36> inds {
+      0, 1, 2, 2, 3, 0,
+      3, 2, 6, 6, 7, 3,
+      7, 6, 5, 5, 4, 7,
+      4, 0, 3, 3, 7, 4,
+      0, 1, 5, 5, 4, 0,
+      1, 5, 6, 6, 2, 1
+    };
+
+    for(size_t i = 0; i < verts.size(); i++) {
+      vertices[i].position = v4scale * verts[i];
+      vertices[i].normal = normalScale * norms[i];
+    }
+    std::copy(inds.begin(), inds.end(), indices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ret.normal_view_vbo);
+    glm::vec4* normals = reinterpret_cast<glm::vec4*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+
+    for(unsigned j = 0, i = 0; j < ret.num_vertices; i+=2) {
+      normals[i] = vertices[j].position;
+      normals[i+1] = normals[i] + glm::vec4(vertices[j].normal, 1.0f);
+      normals[i].w = 0.0;
+      normals[i+1].w = 1.0;
+      j+=1;
+    }
+
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return ret;
   }
 
   static Geometry make_triangle() {

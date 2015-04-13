@@ -43,13 +43,12 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->setClearColor(vec4(0.1, 0.1, 0.2, 1.0));
     rndr->enableDepthBuffer();
 
-
     // Build shader programs
     phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
                                                   "shaders/phong_frag.glsl");
 
     // Create sphere geometry
-    sphere_mesh = Geometry::make_sphere(1.5, 55, 55);
+    sphere_mesh = Geometry::make_cube(vec3(2.0));//Geometry::make_sphere(1.5, 55, 55);
 
 
     // Setup the camera
@@ -60,7 +59,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     Light l1 = {vec4(0.0),
                 vec4(0.15, 0.15, 0.15, 1.0),
                 vec4(0.25, 0.25, 0.25, 1.0) };
-    vec4 center(0.0, 3.0, 5.0, 1.0);
+    vec4 center(0.0, 3.0, -5.0, 1.0);
     vec2 squareSize(2.5);
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
@@ -70,7 +69,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       }
     }
 
-    Light l2 = {vec4(0.0, 0.0, 15.0, 1.0),
+    Light l2 = {vec4(0.0, -5.0, -15.0, 1.0),
                 vec4(0.55, 0.95, 0.55, 1.0),
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->setLight(9, l2);
