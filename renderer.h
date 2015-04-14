@@ -19,9 +19,6 @@ class Renderer {
   static const GLuint MATS_UBO_BINDING_POINT = 1;
   static const GLuint LIGHTS_UBO_BINDING_POINT = 2;
 
-  static const GLuint COLOR1_LOC = 2;
-  static const GLuint COLOR2_LOC = 3;
-
   static const GLuint NUM_LIGHTS = 10;
 
   struct PerFrameData {
@@ -34,7 +31,6 @@ class Renderer {
   };
 
   GLuint per_frame_ubo = 0;
-  GLuint draw_normals_program = 0;
 
   PerFrameData perFrameData;
 
@@ -46,9 +42,11 @@ public:
 
   void drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& geometry);
 
-  void drawWireframe(Geometry& geometry);
+  void drawWireframe(const Geometry& geometry, const glm::mat4& transform);
 
-  void draw(Geometry& geometry);
+  void draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform);
+
+  void draw(const Geometry& geometry, const glm::mat4& transform);
 
   void setProgram(GLuint program);
 
@@ -70,6 +68,10 @@ public:
 
   inline size_t numLights() const {
     return NUM_LIGHTS;
+  }
+
+  glm::vec3 lightPosition(size_t i) {
+    return glm::vec3(perFrameData.lights[i].pos);
   }
 
   void setClearColor(const glm::vec4& clearColor) {

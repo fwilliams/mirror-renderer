@@ -28,12 +28,14 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   Geometry sphereMesh;
   Geometry cubeMesh;
 
-  GLuint phongProgram = 0;
+  GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0;
 
   Material sphereMaterial;
   Renderer* rndr = nullptr;
 
   const GLuint MATERIAL_LOC = 3;
+  static const GLuint COLOR1_LOC = 2;
+  static const GLuint COLOR2_LOC = 3;
 
   SimpleMirrorGLWindow(size_t w, size_t h) :
       SDLGLWindow(w, h) {
@@ -49,9 +51,17 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
                                                   "shaders/phong_frag.glsl");
 
+    // Make debug program which draws the normals of a piece of geometry
+    drawNormalsProgram = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
+                                                        "shaders/draw_normals_frag.glsl");
+
+    // Make program to draw lights
+    drawLightsProgram = ProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
+                                                        "shaders/draw_lights_frag.glsl");
+
     // Create sphere geometry
     sphereMesh = Geometry::make_sphere(1.5, 55, 55);
-    cubeMesh = Geometry::make_cube(vec3(0.025), false);
+    cubeMesh = Geometry::make_cube(vec3(0.1), false);
 
     // Setup the camera
     camera.setPosition(vec3(0.0, 0.0, -4.5));
@@ -71,7 +81,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       }
     }
 
-    Light l2 = {vec4(0.0, -5.0, -15.0, 1.0),
+    Light l2 = {vec4(0.0, -2.0, -5.0, 1.0),
                 vec4(0.55, 0.95, 0.55, 1.0),
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->setLight(9, l2);
@@ -176,16 +186,27 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   void draw(SDLGLWindow& w) {
     rndr->clearViewPort();
     rndr->startFrame();
-    rndr->setProgram(phongProgram);
-    rndr->draw(sphereMesh);
-    rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), sphereMesh);
 
+    // Draw the sphere
+    rndr->setProgram(phongProgram);
+    rndr->draw(sphereMesh, mat4(1.0));
+
+    // Draw a cube over each light
+    rndr->setProgram(drawLightsProgram);
     for(size_t i = 0; i < rndr->numLights(); i++) {
-      // TODO: Model matrix
-      rndr->draw(cubeMesh);
-      rndr->drawNormals(vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0), cubeMesh);
+      glUniform1ui(1, i);
+      rndr->draw(cubeMesh, translate(mat4(1.0), rndr->lightPosition(i)));
     }
-   }
+
+    // Draw normals of each mesh being rendererddddd
+//    rndr->setProgram(drawNormalsProgram);
+//    glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
+//    glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(vec4(0.0, 0.0, 1.0, 1.0)));
+//    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.normal_view_vbo, sphereMesh.num_vertices * 2, mat4(1.0));
+//    for(size_t i = 0; i < rndr->numLights(); i++) {
+//      rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, (size_t)(cubeMesh.num_vertices * 2), translate(mat4(1.0), rndr->lightPosition(i)));
+//    }
+  }
 };
 
 int main(int argc, char** argv) {

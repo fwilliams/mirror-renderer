@@ -46,15 +46,10 @@ Renderer::Renderer() {
   glUnmapBuffer(GL_UNIFORM_BUFFER);
 
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-  // Make debug program which draws the normals of a piece of geometry
-  draw_normals_program = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
-                                                        "shaders/draw_normals_frag.glsl");
 }
 
 Renderer::~Renderer() {
   glDeleteBuffers(1, &per_frame_ubo);
-  glDeleteProgram(draw_normals_program);
 }
 
 void Renderer::startFrame() {
@@ -63,28 +58,30 @@ void Renderer::startFrame() {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void Renderer::drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& geometry) {
-  glUseProgram(draw_normals_program);
-  glBindVertexArray(geometry.normal_view_vao);
-  glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(baseColor));
-  glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(tailColor));
-  glDrawArrays(GL_LINES, 0, geometry.num_vertices * 2);
-  glBindVertexArray(0);
-  glUseProgram(0);
-}
-
-void Renderer::drawWireframe(Geometry& geometry) {
+void Renderer::drawWireframe(const Geometry& geometry, const glm::mat4& transform) {
   glPolygonMode(GL_FRONT_FACE, GL_LINE);
-  draw(geometry);
+  draw(geometry, transform);
   glPolygonMode(GL_FRONT_FACE, GL_FILL);
 }
 
-void Renderer::draw(Geometry& geometry) {
-  perFrameData.normal_matrix = glm::transpose(glm::inverse(glm::mat4(glm::mat3(view()))));
+void Renderer::draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform) {
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
-  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4),
-      &perFrameData.normal_matrix);
-  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  PerFrameData* data = reinterpret_cast<PerFrameData*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
+  data->view_matrix = view() * transform;
+  data->normal_matrix = glm::transpose(glm::inverse(glm::mat4(glm::mat3(data->view_matrix))));
+  glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+  glBindVertexArray(vao);
+  glDrawArrays(GL_LINES, 0, num_vertices);
+  glBindVertexArray(0);
+}
+
+void Renderer::draw(const Geometry& geometry, const glm::mat4& transform) {
+  glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
+  PerFrameData* data = reinterpret_cast<PerFrameData*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
+  data->view_matrix = view() * transform;
+  data->normal_matrix = glm::transpose(glm::inverse(glm::mat4(glm::mat3(data->view_matrix))));
+  glUnmapBuffer(GL_UNIFORM_BUFFER);
 
   glBindVertexArray(geometry.vao);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.ibo);
