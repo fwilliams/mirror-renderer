@@ -61,7 +61,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Create sphere geometry
     sphereMesh = Geometry::make_sphere(1.5, 55, 55);
-    cubeMesh = Geometry::make_cube(vec3(0.1), false);
+    cubeMesh = Geometry::make_cube(vec3(1.0), false);
 
     // Setup the camera
     camera.setPosition(vec3(0.0, 0.0, -4.5));
@@ -70,7 +70,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
                 vec4(0.15, 0.15, 0.15, 1.0),
-                vec4(0.25, 0.25, 0.25, 1.0) };
+                vec4(0.25, 0.25, 0.25, 1.0)};
     vec4 center(0.0, 3.0, -5.0, 1.0);
     vec2 squareSize(2.5);
     for(int i = 0; i < 3; i++) {
@@ -86,6 +86,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->setLight(9, l2);
 
+    rndr->setGlobalAmbient(vec4(0.2, 0.2, 0.2, 1.0));
 
     // Set uniforms for lighting program
     glUseProgram(phongProgram);
@@ -97,7 +98,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     sphereMaterial.specular = vec4(0.6, 0.4, 0.3, 1.0);
     glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphereMaterial.specular));
 
-    sphereMaterial.shine = 250.0f;
+    sphereMaterial.shine = 150.0f;
     glUniform1f(MATERIAL_LOC + 2, sphereMaterial.shine);
 
     glUseProgram(0);
@@ -189,13 +190,13 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Draw the sphere
     rndr->setProgram(phongProgram);
-    rndr->draw(sphereMesh, mat4(1.0));
+    rndr->draw(cubeMesh, mat4(4.0));
 
     // Draw a cube over each light
     rndr->setProgram(drawLightsProgram);
     for(size_t i = 0; i < rndr->numLights(); i++) {
       glUniform1ui(1, i);
-      rndr->draw(cubeMesh, translate(mat4(1.0), rndr->lightPosition(i)));
+      rndr->draw(cubeMesh, scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1)));
     }
 
     // Draw normals of each mesh being rendererddddd

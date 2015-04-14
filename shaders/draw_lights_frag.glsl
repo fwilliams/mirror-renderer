@@ -4,6 +4,8 @@ struct Light {
 	vec4 position;
 	vec4 diffuse;
 	vec4 specular;
+	float attenuation;
+	bool enabled;
 };
 
 layout(std140, binding=2) uniform PerFrameLightingBlock {

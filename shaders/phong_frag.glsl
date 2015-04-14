@@ -4,6 +4,8 @@ struct Light {
 	vec4 position;
 	vec4 diffuse;
 	vec4 specular;
+	float attenuation;
+	bool enabled;
 };
 
 struct Material {

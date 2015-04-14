@@ -13,6 +13,9 @@ struct Light {
   glm::vec4 pos;
   glm::vec4 diffuse;
   glm::vec4 specular;
+  glm::float32 attenuation;
+  glm::bvec1 enabled;
+  glm::vec2 dummy;
 };
 
 class Renderer {

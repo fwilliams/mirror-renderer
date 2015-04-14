@@ -1,5 +1,7 @@
 #version 430
 
+#pragma include "stddefs.glsl"
+
 layout(location = 0) uniform mat4 modelview_mat;
 layout(location = 1) uniform mat4 proj_mat;
 

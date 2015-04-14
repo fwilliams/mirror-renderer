@@ -2,14 +2,19 @@
 #include <errno.h>
 #include <string.h>
 
+#include <string>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
+#include <functional>
 
 #ifndef PROGRAM_BUILDER_H_
 #define PROGRAM_BUILDER_H_
 
 struct ProgramBuilder {
+//  std::vector<std::string> includeDirs;
+
   static GLuint buildComputeProgramFromString(const std::string shader) {
     GLuint program = glCreateProgram();
 
@@ -73,6 +78,22 @@ struct ProgramBuilder {
   }
 
 private:
+
+  static std::string preprocess(const std::string& input) {
+    std::string res;
+    res.resize(input.size());
+    std::istringstream iss(input);
+    for(std::string line; std::getline(iss, line); ) {
+      line.erase(line.begin(), std::find_if(line.begin(), line.end(),
+          std::ptr_fun<int, int>(std::isgraph)));
+      if(line.size() > 0 && line[0] == '#') {
+        std::cerr << "GOT:";
+        std::cerr << line << std::endl;
+      }
+    }
+    return "";
+  }
+
   static std::string readFileToString(const std::string& filename) {
     std::ifstream in(filename.c_str(), std::ios::in | std::ios::binary);
     if (in) {
@@ -95,6 +116,7 @@ private:
     GLint length = src.length();
 
     GLuint shader = glCreateShader(type);
+
     glShaderSource(shader, 1, &source, &length);
 
     glCompileShader(shader);
