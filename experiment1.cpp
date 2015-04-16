@@ -1,6 +1,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <gli/gli.hpp>
+#include <gli/core/texture_cube.hpp>
 #include <iostream>
 
 #include "renderer.h"
@@ -10,6 +12,7 @@
 #include "utils/gl_utils.h"
 
 using namespace glm;
+using namespace gli;
 using namespace std;
 
 struct Material {
@@ -19,21 +22,36 @@ struct Material {
 };
 
 struct SimpleMirrorGLWindow: SDLGLWindow {
+  // Renderer to render objects in the scene
+  Renderer* rndr = nullptr;
+
+  // Camera and information to make an FPS camera
   Camera camera;
-
   const float FOV_Y = 45.0f;
-  vec3 cameraVelocity;
+  vec2 moveCamera = vec2(0, 0);
   vec2 cameraSphericalCoords;
+  vec2 cameraVelocity;
+  vec2 cameraAngularVel;
 
+  // Skybox texture
+  textureCube skyboxTexture;
+
+  // Geometry for a cube and a sphere
   Geometry sphereMesh;
   Geometry cubeMesh;
 
-  GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0;
-
+  // Materials for the sphere and cube
   Material sphereMaterial;
-  Renderer* rndr = nullptr;
+  Material cubeMaterial;
 
-  const GLuint MATERIAL_LOC = 3;
+  // Transformations for geometry in the scene
+  mat4 cubeTransform = scale(translate(mat4(1.0), vec3(0.0, 4.0, 0.0)), vec3(4.0, 8.0, 4.0));
+  mat4 sphereTransform = translate(mat4(1.0), vec3(-5.0, 3.5, -4.0));
+
+  // Programs used to render objects in the scene
+  GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0, drawSkyboxProgram = 0;
+  // Locations of uniforms in programs
+  static const GLuint MATERIAL_LOC = 3;
   static const GLuint COLOR1_LOC = 2;
   static const GLuint COLOR2_LOC = 3;
 
@@ -41,70 +59,22 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       SDLGLWindow(w, h) {
   }
 
-  void setup(SDLGLWindow& w) {
-    // Initialize the renderer
-    rndr = new Renderer();
-    rndr->setClearColor(vec4(0.1, 0.1, 0.2, 1.0));
-    rndr->enableDepthBuffer();
-
-    // Build shader programs
-    phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
-                                                  "shaders/phong_frag.glsl");
-
-    // Make debug program which draws the normals of a piece of geometry
-    drawNormalsProgram = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
-                                                        "shaders/draw_normals_frag.glsl");
-
-    // Make program to draw lights
-    drawLightsProgram = ProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
-                                                        "shaders/draw_lights_frag.glsl");
-
-    // Create sphere geometry
-    sphereMesh = Geometry::make_sphere(1.5, 55, 55);
-    cubeMesh = Geometry::make_cube(vec3(1.0), false);
-
-    // Setup the camera
-    camera.setPosition(vec3(0.0, 0.0, -4.5));
-    camera.setPerspectiveProjection(FOV_Y, w.aspectRatio(), 0.5, 1000.0);
-
-    // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
-    Light l1 = {vec4(0.0),
-                vec4(0.15, 0.15, 0.15, 1.0),
-                vec4(0.25, 0.25, 0.25, 1.0)};
-    vec4 center(0.0, 3.0, -5.0, 1.0);
-    vec2 squareSize(2.5);
-    for(int i = 0; i < 3; i++) {
-      for(int j = 0; j < 3; j++) {
-        vec4 offset((i-1)*squareSize.x/2.0, 0.0, (j-1)*squareSize.y/2.0, 0.0);
-        rndr->setLight(3*i + j, l1);
-        rndr->setLightPos(3*i + j, (center + offset));
-      }
+  void drawNormals(const vec4& color1, const vec4& color2) {
+    rndr->setProgram(drawNormalsProgram);
+    glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(color1));
+    glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(color2));
+    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.normal_view_vbo, sphereMesh.num_vertices * 2, sphereTransform);
+    rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, cubeMesh.num_vertices * 2, cubeTransform);
+    for(size_t i = 0; i < rndr->numLights(); i++) {
+      const mat4 lightTransform = scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1));
+      rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, (size_t)(cubeMesh.num_vertices * 2), lightTransform);
     }
+  }
 
-    Light l2 = {vec4(0.0, -2.0, -5.0, 1.0),
-                vec4(0.55, 0.95, 0.55, 1.0),
-                vec4(0.1, 0.1, 0.1, 1.0) };
-    rndr->setLight(9, l2);
-
-    rndr->setGlobalAmbient(vec4(0.2, 0.2, 0.2, 1.0));
-
-    // Set uniforms for lighting program
-    glUseProgram(phongProgram);
-
-    // Setup material
-    sphereMaterial.diffuse = vec4(0.4, 0.6, 0.7, 1.0);
-    glUniform4fv(MATERIAL_LOC, 1, value_ptr(sphereMaterial.diffuse));
-
-    sphereMaterial.specular = vec4(0.6, 0.4, 0.3, 1.0);
-    glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(sphereMaterial.specular));
-
-    sphereMaterial.shine = 150.0f;
-    glUniform1f(MATERIAL_LOC + 2, sphereMaterial.shine);
-
-    glUseProgram(0);
-
-    setMousePosition(w.width()/2, w.height()/2);
-    showCursor(false);
+  void setMaterial(const Material& material) {
+    glUniform4fv(MATERIAL_LOC, 1, value_ptr(material.diffuse));
+    glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(material.specular));
+    glUniform1f(MATERIAL_LOC + 2, material.shine);
   }
 
   void updateCameraOrientation() {
@@ -121,7 +91,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Normalize mouse position
     const vec2 normalizedMousePos = vec2(mousePos.y, mousePos.x) / vec2(height(), width()) / 2.0f;
     vec2 dCamSphericalPos = normalizedMousePos * vec2(FOV_Y*aspectRatio(), FOV_Y) / 2.0f;
-    dCamSphericalPos = radians(dCamSphericalPos);
+    dCamSphericalPos = cameraAngularVel * radians(dCamSphericalPos);
     cameraSphericalCoords += dCamSphericalPos;
 
     // Don't let the user rotate up and down more than 90 degrees
@@ -134,63 +104,148 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     camera.setRotationAngles(vec3(cameraSphericalCoords.x, cameraSphericalCoords.y, 0.0));
   }
 
+  void setup(SDLGLWindow& w) {
+    // Initialize the renderer
+    rndr = new Renderer();
+    rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
+    rndr->enableDepthBuffer();
+    rndr->enableFaceCulling();
+
+
+    // Build shader programs
+    phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
+                                                  "shaders/phong_frag.glsl");
+
+    // Make debug program which draws the normals of a piece of geometry
+    drawNormalsProgram = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
+                                                        "shaders/draw_normals_frag.glsl");
+
+    // Make program to draw lights
+    drawLightsProgram = ProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
+                                                       "shaders/draw_lights_frag.glsl");
+
+    // Make a program to draw a skybox
+    drawSkyboxProgram = ProgramBuilder::buildFromFiles("shaders/cubemap_vert.glsl",
+                                                       "shaders/cubemap_frag.glsl");
+
+
+    // Create geometry
+    cubeMesh = Geometry::make_cube(vec3(1.0), false);
+    sphereMesh = Geometry::make_sphere(1.5, 100, 100);
+
+
+    // skyboxTexture = textureCube(load_dds("textures/skybox_texture.dds"));
+
+    // Setup the camera
+    camera.setPosition(vec3(0.0, 1.0, -7.5));
+    camera.setPerspectiveProjection(FOV_Y, w.aspectRatio(), 0.5, 1000.0);
+    cameraVelocity = vec2(0.1);
+    cameraAngularVel = vec2(3.0);
+
+
+    // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
+    Light l1 = {vec4(0.0),
+                vec4(0.15, 0.15, 0.15, 1.0),
+                vec4(0.25, 0.25, 0.25, 1.0)};
+    vec4 center(0.0, 15.0, -5.0, 1.0);
+    vec2 squareSize(2.5);
+    for(int i = 0; i < 3; i++) {
+      for(int j = 0; j < 3; j++) {
+        size_t light_index = 3 * i + j;
+        vec4 offset((i-1)*squareSize.x/2.0, 0.0, (j-1)*squareSize.y/2.0, 0.0);
+        rndr->enableLight(light_index);
+        rndr->setLight(light_index, l1);
+        rndr->setLightPos(light_index, (center + offset));
+      }
+    }
+
+    Light l2 = {vec4(0.0, 2.0, -5.0, 1.0),
+                vec4(0.55, 0.95, 0.55, 1.0),
+                vec4(0.1, 0.1, 0.1, 1.0) };
+    rndr->enableLight(9);
+    rndr->setLight(9, l2);
+
+    rndr->setGlobalAmbient(vec4(0.2, 0.2, 0.2, 1.0));
+
+
+    // Setup materials
+    cubeMaterial.diffuse = vec4(0.4, 0.4, 0.7, 1.0);
+    cubeMaterial.specular = vec4(0.6, 0.4, 0.3, 1.0);
+    cubeMaterial.shine = 256.0f;
+
+    sphereMaterial.diffuse = vec4(0.7, 0.4, 0.5, 1.0);
+    sphereMaterial.specular = vec4(0.5, 0.6, 0.3, 1.0);
+    sphereMaterial.shine = 1024.0f;
+
+
+    // Move mouse cursor to the middle of the screen and hide it
+    setMousePosition(w.width()/2, w.height()/2);
+    showCursor(false);
+  }
+
   void handle_event(SDLGLWindow& w, const SDL_Event& event) {
     if(event.type == SDL_KEYDOWN) {
       if(event.key.keysym.sym == SDLK_w) {
-        cameraVelocity.z = 0.1;
+        cameraVelocity.y = 0.1;
+        moveCamera.y = 1.0;
       }
       if(event.key.keysym.sym == SDLK_s) {
-        cameraVelocity.z = -0.1;
+        moveCamera.y = -1.0;
       }
       if(event.key.keysym.sym == SDLK_d) {
-        cameraVelocity.x = 0.1;
+        moveCamera.x = 1.0;
       }
       if(event.key.keysym.sym == SDLK_a) {
-        cameraVelocity.x = -0.1;
+        moveCamera.x = -1.0;
       }
     }
 
     if(event.type == SDL_KEYUP) {
       if(event.key.keysym.sym == SDLK_w) {
-        cameraVelocity.z = 0.0;
+        moveCamera.y = 0.0;
       }
       if(event.key.keysym.sym == SDLK_s) {
-        cameraVelocity.z = 0.0;
+        moveCamera.y = 0.0;
       }
       if(event.key.keysym.sym == SDLK_d) {
-        cameraVelocity.x = 0.0;
+        moveCamera.x = 0.0;
       }
       if(event.key.keysym.sym == SDLK_a) {
-        cameraVelocity.x = 0.0;
+        moveCamera.x = 0.0;
       }
     }
   }
 
   void update(SDLGLWindow& w) {
     updateCameraOrientation();
-    camera.advance(cameraVelocity.z);
-    camera.strafeRight(cameraVelocity.x);
+    camera.advance(moveCamera.y * cameraVelocity.y);
+    camera.strafeRight(moveCamera.x * cameraVelocity.x);
     rndr->setProjectionMatrix(camera.getProjectionMatrix());
     rndr->setViewMatrix(camera.getViewMatrix());
-  }
-
-  void teardown(SDLGLWindow& w) {
-    delete rndr;
-    glDeleteBuffers(1, &sphereMesh.vbo);
-    glDeleteBuffers(1, &sphereMesh.ibo);
-    glDeleteBuffers(1, &sphereMesh.normal_view_vbo);
-    glDeleteVertexArrays(1, &sphereMesh.vao);
-    glDeleteVertexArrays(1, &sphereMesh.normal_view_vao);
-    glDeleteProgram(phongProgram);
   }
 
   void draw(SDLGLWindow& w) {
     rndr->clearViewPort();
     rndr->startFrame();
 
-    // Draw the sphere
+    // Draw the skybox
+//    rndr->setProgram(drawSkyboxProgram);
+//
+//    rndr->disableDepthBuffer();
+//    rndr->disableFaceCulling();
+//    rndr->draw(cubeMesh, translate(mat4(1.0), camera.getPosition()) * scale(mat4(1.0), vec3(2.0)));
+//    rndr->enableFaceCulling();
+//    rndr->enableDepthBuffer();
+
+    // Draw the and the cube sphere
     rndr->setProgram(phongProgram);
-    rndr->draw(cubeMesh, mat4(4.0));
+
+    setMaterial(cubeMaterial);
+    rndr->draw(cubeMesh, cubeTransform);
+
+    setMaterial(sphereMaterial);
+    rndr->draw(sphereMesh, sphereTransform);
+
 
     // Draw a cube over each light
     rndr->setProgram(drawLightsProgram);
@@ -198,15 +253,27 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       glUniform1ui(1, i);
       rndr->draw(cubeMesh, scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1)));
     }
+  }
 
-    // Draw normals of each mesh being rendererddddd
-//    rndr->setProgram(drawNormalsProgram);
-//    glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
-//    glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(vec4(0.0, 0.0, 1.0, 1.0)));
-//    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.normal_view_vbo, sphereMesh.num_vertices * 2, mat4(1.0));
-//    for(size_t i = 0; i < rndr->numLights(); i++) {
-//      rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, (size_t)(cubeMesh.num_vertices * 2), translate(mat4(1.0), rndr->lightPosition(i)));
-//    }
+  void teardown(SDLGLWindow& w) {
+    delete rndr;
+
+    glDeleteBuffers(1, &sphereMesh.vbo);
+    glDeleteBuffers(1, &sphereMesh.ibo);
+    glDeleteBuffers(1, &sphereMesh.normal_view_vbo);
+    glDeleteVertexArrays(1, &sphereMesh.vao);
+    glDeleteVertexArrays(1, &sphereMesh.normal_view_vao);
+
+    glDeleteBuffers(1, &cubeMesh.vbo);
+    glDeleteBuffers(1, &cubeMesh.ibo);
+    glDeleteBuffers(1, &cubeMesh.normal_view_vbo);
+    glDeleteVertexArrays(1, &cubeMesh.vao);
+    glDeleteVertexArrays(1, &cubeMesh.normal_view_vao);
+
+    glDeleteProgram(phongProgram);
+    glDeleteProgram(drawLightsProgram);
+    glDeleteProgram(drawNormalsProgram);
+    glDeleteProgram(drawSkyboxProgram);
   }
 };
 

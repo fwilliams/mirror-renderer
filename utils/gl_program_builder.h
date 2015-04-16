@@ -87,7 +87,7 @@ private:
       line.erase(line.begin(), std::find_if(line.begin(), line.end(),
           std::ptr_fun<int, int>(std::isgraph)));
       if(line.size() > 0 && line[0] == '#') {
-        std::cerr << "GOT:";
+        // TODO: Handle custom pragmas
         std::cerr << line << std::endl;
       }
     }

@@ -49,7 +49,7 @@ void SDLGLWindow::mainLoop() {
     update(*this);
     draw(*this);
     SDL_GL_SwapWindow(window);
-    SDL_Delay(33);
+    SDL_Delay(15);
   } while (running);
 
   teardown(*this);

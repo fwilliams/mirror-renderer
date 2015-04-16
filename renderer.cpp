@@ -58,12 +58,6 @@ void Renderer::startFrame() {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void Renderer::drawWireframe(const Geometry& geometry, const glm::mat4& transform) {
-  glPolygonMode(GL_FRONT_FACE, GL_LINE);
-  draw(geometry, transform);
-  glPolygonMode(GL_FRONT_FACE, GL_FILL);
-}
-
 void Renderer::draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform) {
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
   PerFrameData* data = reinterpret_cast<PerFrameData*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));

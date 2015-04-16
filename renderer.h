@@ -38,14 +38,13 @@ class Renderer {
   PerFrameData perFrameData;
 
 public:
+  enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
+  enum WindingMode { CW, CCW };
+
   Renderer();
   virtual ~Renderer();
 
   void startFrame();
-
-  void drawNormals(glm::vec4 baseColor, glm::vec4 tailColor, Geometry& geometry);
-
-  void drawWireframe(const Geometry& geometry, const glm::mat4& transform);
 
   void draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform);
 
@@ -75,6 +74,18 @@ public:
 
   glm::vec3 lightPosition(size_t i) {
     return glm::vec3(perFrameData.lights[i].pos);
+  }
+
+  void enableFaceCulling() {
+    glEnable(GL_CULL_FACE);
+  }
+
+  void disableFaceCulling() {
+    glDisable(GL_CULL_FACE);
+  }
+
+  void setFaceCullMode(FaceCullMode mode) {
+    glCullFace(mode);
   }
 
   void setClearColor(const glm::vec4& clearColor) {
@@ -110,11 +121,11 @@ public:
   }
 
   void disableLight(GLuint light) {
-    // TODO: Implement enabling/disabling of lights
+    perFrameData.lights[light].enabled = glm::bvec1(false);
   }
 
   void enableLight(GLuint light) {
-    // TODO: Implement enabling disabling of lights
+    perFrameData.lights[light].enabled = glm::bvec1(true);
   }
 
   void setViewMatrix(const glm::mat4& matrix) {
