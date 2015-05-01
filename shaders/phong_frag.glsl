@@ -19,7 +19,7 @@ void main() {
 	
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < std_Lights.length(); i++) {
-		vec4 viewSpaceLightPos = std_Modelview * std_Lights[i].position;
+		vec4 viewSpaceLightPos = std_View * std_Lights[i].position;
 		vec3 dirToLight = normalize(vec3(viewSpaceLightPos - v_position));
 		vec3 dirToViewer = normalize(-v_position.xyz);
 

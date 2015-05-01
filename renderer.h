@@ -25,10 +25,10 @@ class Renderer {
   static const GLuint NUM_LIGHTS = 10;
 
   struct PerFrameData {
+    glm::mat4 modelview_matrix;
+    glm::mat4 normal_matrix;
     glm::mat4 view_matrix;
     glm::mat4 proj_matrix;
-    glm::mat4 normal_matrix;
-    glm::mat4 dummy; // FIXME: Uniform bindings need to be 256 byte aligned
     glm::vec4 global_ambient;
     Light lights[NUM_LIGHTS];
   };
@@ -105,7 +105,7 @@ public:
   }
 
   void setLightAttenuation(GLuint light, GLfloat attenuation) {
-    perFrameData.lights[light].attenuation = attenuation;
+    perFrameData.lights[light].attenuation = 1.0f / glm::pow(attenuation, 2.0);
   }
 
   void setLightPos(GLuint light, const glm::vec4& pos) {

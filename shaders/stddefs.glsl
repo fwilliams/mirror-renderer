@@ -12,13 +12,15 @@ struct Material {
 	float shine_exp;
 };
 
-#define MATRIX_BLOCK_BINDING_POINT 1
+#define PER_FRAME_MATRIX_BLOCK_BINDING_POINT 1
 #define PER_FRAME_LIGHT_BLOCK 2
+#define PER_DRAW_MATRIX_BLOCK_BINDING_POINT 3
 
-layout(std140, binding=MATRIX_BLOCK_BINDING_POINT) uniform PerFrameMatrixBlock {
+layout(std140, binding=PER_FRAME_MATRIX_BLOCK_BINDING_POINT) uniform PerFrameMatrixBlock {
 	mat4 std_Modelview;
-	mat4 std_Projection;
 	mat4 std_Normal;
+	mat4 std_View;
+	mat4 std_Projection;
 };
 
 layout(std140, binding=PER_FRAME_LIGHT_BLOCK) uniform PerFrameLightingBlock {
