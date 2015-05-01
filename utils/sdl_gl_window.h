@@ -64,6 +64,10 @@ public:
     running = false;
   }
 
+  void getNormalizedMousePos(float pos[2]);
+
+  void getNormalizedMousePos(float& x, float& y);
+
   virtual ~SDLGLWindow();
 };
 

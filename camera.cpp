@@ -102,4 +102,75 @@ float Camera::getFovX() const {
   return fov.x;
 }
 
+float Camera::getFovYRadians() const {
+  return radians(fov.y);
+}
 
+float Camera::getFovXRadians() const {
+  return radians(fov.x);
+}
+
+FirstPersonCamera::FirstPersonCamera(const glm::vec2& vel, const glm::vec2& angVel) :
+    cameraVelocity(vel), cameraAngularVel(angVel) {}
+
+void FirstPersonCamera::setHorizontalDirection(const CameraDirection& dir) {
+  switch(dir) {
+  case CameraDirection::POSITIVE:
+    moveCamera.x = 1.0;
+    break;
+  case CameraDirection::NEGATIVE:
+    moveCamera.x = -1.0;
+    break;
+  case CameraDirection::STOPPED:
+    moveCamera.x = 0.0;
+    break;
+  }
+}
+
+void FirstPersonCamera::setForwardDirection(const CameraDirection& dir) {
+  switch(dir) {
+  case CameraDirection::POSITIVE:
+    moveCamera.y = 1.0;
+    break;
+  case CameraDirection::NEGATIVE:
+    moveCamera.y = -1.0;
+    break;
+  case CameraDirection::STOPPED:
+    moveCamera.y = 0.0;
+    break;
+  }
+}
+
+void FirstPersonCamera::setDirection(const CameraDirection& dirH, const CameraDirection& dirV) {
+  setHorizontalDirection(dirH);
+  setForwardDirection(dirV);
+}
+
+void FirstPersonCamera::setCameraVelocity(const glm::vec2& vel) {
+  cameraVelocity = vel;
+}
+
+void FirstPersonCamera::updateLookat(const glm::vec2& pos) {
+  // Normalize mouse position
+  vec2 dCamSphericalPos = pos * vec2(getFovX(), getFovY()) / 2.0f;
+  dCamSphericalPos = cameraAngularVel * radians(dCamSphericalPos);
+  cameraSphericalCoords += dCamSphericalPos;
+
+  // Don't let the user rotate up and down more than 90 degrees
+  cameraSphericalCoords.x = clamp(cameraSphericalCoords.x, -half_pi<float>(), half_pi<float>());
+
+  // Keep the camera y angle in the range (0, 360) degrees to prevent floating point errors
+  cameraSphericalCoords.y = mod(cameraSphericalCoords.y, two_pi<float>());
+
+  // Set the orientation of the camera based on the stored angles
+  this->setRotationAngles(vec3(cameraSphericalCoords.x, cameraSphericalCoords.y, 0.0));
+}
+
+void FirstPersonCamera::setAngularVelocity(const glm::vec2& vel) {
+  cameraAngularVel = vel;
+}
+
+void FirstPersonCamera::updatePosition() {
+  advance(moveCamera.y * cameraVelocity.y);
+  strafeRight(moveCamera.x * cameraVelocity.x);
+}

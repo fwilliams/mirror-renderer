@@ -71,3 +71,34 @@ void SDLGLWindow::enableDebugLogging()  {
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(gl_debug_callback, nullptr);
 }
+
+
+void SDLGLWindow::getNormalizedMousePos(float pos[2]) {
+  // Get the coordinates of the cursor with respect to the top left corner of the screen
+  int mousePos[2];
+  SDL_GetMouseState(&mousePos[0], &mousePos[1]);
+
+  // Transform mouse coordinates so (0, 0) is the center of the screen, y is up, and x is right
+  float fMousePos[2];
+  fMousePos[0] = -1.0f * (mousePos[0] - width()/2.0f);
+  fMousePos[1] = mousePos[1] - height()/2.0f;
+
+  // Normalize mouse position
+  pos[1] = fMousePos[0] / (width()/2.0f);
+  pos[0] = fMousePos[1] / (height()/2.0f);
+}
+
+void SDLGLWindow::getNormalizedMousePos(float& x, float& y) {
+  // Get the coordinates of the cursor with respect to the top left corner of the screen
+  int mousePos[2];
+  SDL_GetMouseState(&mousePos[0], &mousePos[1]);
+
+  // Transform mouse coordinates so (0, 0) is the center of the screen, y is up, and x is right
+  float fMousePos[2];
+  fMousePos[0] = -1.0f * (mousePos[0] - width()/2.0f);
+  fMousePos[1] = mousePos[1] - height()/2.0f;
+
+  // Normalize mouse position
+  y = fMousePos[0] / (width()/2.0f);
+  x = fMousePos[1] / (height()/2.0f);
+}

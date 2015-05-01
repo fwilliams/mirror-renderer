@@ -22,14 +22,9 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   // Renderer to render objects in the scene
   Renderer* rndr = nullptr;
 
-  // Camera and information to make an FPS camera
-  Camera camera;
+  // An FPS camera
+  FirstPersonCamera camera;
   const float FOV_Y = 45.0f;
-  vec2 moveCamera = vec2(0, 0);
-  vec2 cameraSphericalCoords;
-  vec2 cameraVelocity;
-  vec2 cameraAngularVel;
-
 
   // Geometry for a cube and a sphere
   Geometry sphereMesh;
@@ -72,33 +67,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glUniform1f(MATERIAL_LOC + 2, material.shine);
   }
 
-  void updateCameraOrientation() {
-    // Get the coordinates of the cursor with respect to the top left corner of the screen
-    ivec2 mousePos;
-    SDL_GetMouseState(&mousePos.x, &mousePos.y);
-
-    // Reset the cursor position to the middle of the screen
-    setMousePosition(width()/2, height()/2);
-
-    // Transform mouse coordinates so (0, 0) is the center of the screen, y is up, and x is right
-    mousePos = ivec2(-1, 1) * (mousePos - (ivec2(width(), height()) / 2));
-
-    // Normalize mouse position
-    const vec2 normalizedMousePos = vec2(mousePos.y, mousePos.x) / vec2(height(), width()) / 2.0f;
-    vec2 dCamSphericalPos = normalizedMousePos * vec2(FOV_Y*aspectRatio(), FOV_Y) / 2.0f;
-    dCamSphericalPos = cameraAngularVel * radians(dCamSphericalPos);
-    cameraSphericalCoords += dCamSphericalPos;
-
-    // Don't let the user rotate up and down more than 90 degrees
-    cameraSphericalCoords.x = clamp(cameraSphericalCoords.x, -half_pi<float>(), half_pi<float>());
-
-    // Keep the camera y angle in the range (0, 360) degrees to prevent floating point errors
-    cameraSphericalCoords.y = mod(cameraSphericalCoords.y, two_pi<float>());
-
-    // Set the orientation of the camera based on the stored angles
-    camera.setRotationAngles(vec3(cameraSphericalCoords.x, cameraSphericalCoords.y, 0.0));
-  }
-
   void setup(SDLGLWindow& w) {
     // Initialize the renderer
     rndr = new Renderer();
@@ -128,8 +96,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Setup the camera
     camera.setPosition(vec3(0.0, 1.0, -7.5));
     camera.setPerspectiveProjection(FOV_Y, w.aspectRatio(), 0.5, 1000.0);
-    cameraVelocity = vec2(0.1);
-    cameraAngularVel = vec2(3.0);
+    camera.setCameraVelocity(vec2(0.1));
 
 
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
@@ -177,40 +144,35 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   void handle_event(SDLGLWindow& w, const SDL_Event& event) {
     if(event.type == SDL_KEYDOWN) {
       if(event.key.keysym.sym == SDLK_w) {
-        cameraVelocity.y = 0.1;
-        moveCamera.y = 1.0;
+        camera.setForwardDirection(FirstPersonCamera::CameraDirection::POSITIVE);
       }
       if(event.key.keysym.sym == SDLK_s) {
-        moveCamera.y = -1.0;
+        camera.setForwardDirection(FirstPersonCamera::CameraDirection::NEGATIVE);
       }
       if(event.key.keysym.sym == SDLK_d) {
-        moveCamera.x = 1.0;
+        camera.setHorizontalDirection(FirstPersonCamera::CameraDirection::POSITIVE);
       }
       if(event.key.keysym.sym == SDLK_a) {
-        moveCamera.x = -1.0;
+        camera.setHorizontalDirection(FirstPersonCamera::CameraDirection::NEGATIVE);
       }
     }
 
     if(event.type == SDL_KEYUP) {
-      if(event.key.keysym.sym == SDLK_w) {
-        moveCamera.y = 0.0;
+      if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_s) {
+        camera.setForwardDirection(FirstPersonCamera::CameraDirection::STOPPED);
       }
-      if(event.key.keysym.sym == SDLK_s) {
-        moveCamera.y = 0.0;
-      }
-      if(event.key.keysym.sym == SDLK_d) {
-        moveCamera.x = 0.0;
-      }
-      if(event.key.keysym.sym == SDLK_a) {
-        moveCamera.x = 0.0;
+      if(event.key.keysym.sym == SDLK_d || event.key.keysym.sym == SDLK_a) {
+        camera.setHorizontalDirection(FirstPersonCamera::CameraDirection::STOPPED);
       }
     }
   }
 
   void update(SDLGLWindow& w) {
-    updateCameraOrientation();
-    camera.advance(moveCamera.y * cameraVelocity.y);
-    camera.strafeRight(moveCamera.x * cameraVelocity.x);
+    vec2 mp;
+    getNormalizedMousePos(value_ptr(mp));
+    setMousePosition(width()/2, height()/2);
+    camera.updateLookat(mp);
+    camera.updatePosition();
     rndr->setProjectionMatrix(camera.getProjectionMatrix());
     rndr->setViewMatrix(camera.getViewMatrix());
   }
