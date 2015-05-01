@@ -58,7 +58,7 @@ void Renderer::startFrame() {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void Renderer::draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform) {
+void Renderer::draw(GLuint vao, size_t num_vertices, const glm::mat4& transform) {
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
   PerFrameData* data = reinterpret_cast<PerFrameData*>(glMapBuffer(GL_UNIFORM_BUFFER, GL_READ_WRITE));
   data->view_matrix = view() * transform;

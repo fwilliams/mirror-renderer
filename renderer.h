@@ -46,7 +46,7 @@ public:
 
   void startFrame();
 
-  void draw(GLuint vao, GLuint vbo, size_t num_vertices, const glm::mat4& transform);
+  void draw(GLuint vao, size_t num_vertices, const glm::mat4& transform);
 
   void draw(const Geometry& geometry, const glm::mat4& transform);
 
@@ -102,6 +102,10 @@ public:
 
   void setGlobalAmbient(const glm::vec4& globalAmb) {
     perFrameData.global_ambient = globalAmb;
+  }
+
+  void setLightAttenuation(GLuint light, GLfloat attenuation) {
+    perFrameData.lights[light].attenuation = attenuation;
   }
 
   void setLightPos(GLuint light, const glm::vec4& pos) {

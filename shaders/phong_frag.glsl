@@ -15,14 +15,22 @@ void main() {
 	fragcolor = std_GlobalAmbient;
 			
 	vec4 diffuse, specular;
+	float attenuation;
+	
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < std_Lights.length(); i++) {
-		vec3 dirToLight = normalize(vec3((std_Modelview * std_Lights[i].position) - v_position));
+		vec4 viewSpaceLightPos = std_Modelview * std_Lights[i].position;
+		vec3 dirToLight = normalize(vec3(viewSpaceLightPos - v_position));
 		vec3 dirToViewer = normalize(-v_position.xyz);
 
 		std_Diffuse(dirToLight, normal, material, diffuse);
 		std_BlinnPhongSpecular(dirToLight, dirToViewer, normal, material, specular);
+		std_Attenuation(viewSpaceLightPos, std_Lights[i].attenuation, v_position, attenuation);
 		
-		fragcolor += diffuse * std_Lights[i].diffuse + specular * std_Lights[i].specular;
+		fragcolor += attenuation * (diffuse * std_Lights[i].diffuse + specular * std_Lights[i].specular);
 	}
+	
+	vec4 gamma = vec4(1.0/1.8);
+	gamma.a = fragcolor.a;
+	fragcolor = pow(fragcolor, gamma);
 }

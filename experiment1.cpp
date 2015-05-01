@@ -40,7 +40,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   Material cubeMaterial;
 
   // Transformations for geometry in the scene
-  mat4 cubeTransform = scale(translate(mat4(1.0), vec3(0.0, 4.0, 0.0)), vec3(4.0, 8.0, 4.0));
+  mat4 cubeTransform = scale(translate(mat4(1.0), vec3(8.0, 4.0, 8.0)), vec3(4.0, 8.0, 4.0));
   mat4 sphereTransform = translate(mat4(1.0), vec3(-5.0, 3.5, -4.0));
 
   // Programs used to render objects in the scene
@@ -58,11 +58,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->setProgram(drawNormalsProgram);
     glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(color1));
     glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(color2));
-    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.normal_view_vbo, sphereMesh.num_vertices * 2, sphereTransform);
-    rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, cubeMesh.num_vertices * 2, cubeTransform);
+    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.num_vertices * 2, sphereTransform);
+    rndr->draw(cubeMesh.normal_view_vao, cubeMesh.num_vertices * 2, cubeTransform);
     for(size_t i = 0; i < rndr->numLights(); i++) {
       const mat4 lightTransform = scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1));
-      rndr->draw(cubeMesh.normal_view_vao, cubeMesh.normal_view_vbo, (size_t)(cubeMesh.num_vertices * 2), lightTransform);
+      rndr->draw(cubeMesh.normal_view_vao, (size_t)(cubeMesh.num_vertices * 2), lightTransform);
     }
   }
 
@@ -134,8 +134,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
-                vec4(0.15, 0.15, 0.15, 1.0),
-                vec4(0.25, 0.25, 0.25, 1.0)};
+                vec4(0.075, 0.075, 0.125, 1.0),
+                vec4(0.125, 0.125, 0.125, 1.0)};
     vec4 center(0.0, 15.0, -5.0, 1.0);
     vec2 squareSize(42.5);
     for(int i = 0; i < 3; i++) {
@@ -145,25 +145,27 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
         rndr->enableLight(light_index);
         rndr->setLight(light_index, l1);
         rndr->setLightPos(light_index, (center + offset));
+        rndr->setLightAttenuation(light_index, 0.0001);
       }
     }
 
     Light l2 = {vec4(0.0, 2.0, -5.0, 1.0),
-                vec4(0.55, 0.95, 0.55, 1.0),
+                vec4(0.3525, 0.4525, 0.3525, 1.0),
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->enableLight(9);
     rndr->setLight(9, l2);
+    rndr->setLightAttenuation(9, 0.001);
 
     rndr->setGlobalAmbient(vec4(0.2, 0.2, 0.2, 1.0));
 
 
     // Setup materials
-    cubeMaterial.diffuse = vec4(0.4, 0.4, 0.7, 1.0);
-    cubeMaterial.specular = vec4(0.6, 0.4, 0.3, 1.0);
+    cubeMaterial.diffuse = vec4(0.2, 0.2, 0.5, 1.0);
+    cubeMaterial.specular = vec4(0.3, 0.2, 0.15, 1.0);
     cubeMaterial.shine = 256.0f;
 
-    sphereMaterial.diffuse = vec4(0.7, 0.4, 0.5, 1.0);
-    sphereMaterial.specular = vec4(0.5, 0.6, 0.3, 1.0);
+    sphereMaterial.diffuse = vec4(0.35, 0.2, 0.25, 1.0);
+    sphereMaterial.specular = vec4(0.25, 0.3, 0.15, 1.0);
     sphereMaterial.shine = 1024.0f;
 
 
