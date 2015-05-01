@@ -111,7 +111,6 @@ private:
       line.append(std::string("\n"));
       res = res.append(line);
     }
-    std::cerr << "LENGTH1: " << res.size() << std::endl;
     return res;
   }
 
