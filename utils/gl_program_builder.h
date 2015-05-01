@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <functional>
+#include <iterator>
 
 #ifndef PROGRAM_BUILDER_H_
 #define PROGRAM_BUILDER_H_
@@ -81,17 +82,37 @@ private:
 
   static std::string preprocess(const std::string& input) {
     std::string res;
-    res.resize(input.size());
     std::istringstream iss(input);
     for(std::string line; std::getline(iss, line); ) {
-      line.erase(line.begin(), std::find_if(line.begin(), line.end(),
-          std::ptr_fun<int, int>(std::isgraph)));
-      if(line.size() > 0 && line[0] == '#') {
-        // TODO: Handle custom pragmas
-        std::cerr << line << std::endl;
+      // Copy original line to alter it
+      std::string line_cpy = line;
+
+      // Clear whitespace before the line
+      line_cpy.erase(line_cpy.begin(),
+          std::find_if(line_cpy.begin(), line_cpy.end(), std::ptr_fun<int, int>(std::isgraph)));
+
+      // Check for preprocessor directives
+      if(line_cpy.size() > 0 && line_cpy[0] == '#') {
+        // Split line into tokens by whitespace
+        std::istringstream buf(line_cpy);
+        std::vector<std::string> tokens{std::istream_iterator<std::string>(buf),
+                                        std::istream_iterator<std::string>()};
+        // Handle #pragma directives
+        if(tokens[0] == "#pragma") {
+          if(tokens[1] == "include") {
+            std::string filename = tokens[2].substr(1, tokens[2].size()-2);
+            std::string file_str = readFileToString(filename);
+            file_str = file_str.append(std::string("\n"));
+            res = res.append(file_str);
+            continue;
+          }
+        }
       }
+      line.append(std::string("\n"));
+      res = res.append(line);
     }
-    return "";
+    std::cerr << "LENGTH1: " << res.size() << std::endl;
+    return res;
   }
 
   static std::string readFileToString(const std::string& filename) {
@@ -112,12 +133,12 @@ private:
   }
 
   static GLuint compile(const GLenum type, const std::string& src) {
-    const GLchar* source = src.c_str();
-    GLint length = src.length();
+    std::string s = preprocess(src);
 
     GLuint shader = glCreateShader(type);
+    const GLchar* source = s.c_str();
 
-    glShaderSource(shader, 1, &source, &length);
+    glShaderSource(shader, 1, &source, nullptr);
 
     glCompileShader(shader);
 

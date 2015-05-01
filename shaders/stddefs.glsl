@@ -1,3 +1,5 @@
+#version 430
+
 struct Light {
 	vec4 position;
 	vec4 diffuse;
@@ -25,4 +27,3 @@ layout(std140, binding=PER_FRAME_LIGHT_BLOCK) uniform PerFrameLightingBlock {
 	vec4 global_ambient;
 	Light lights[10];
 };
-

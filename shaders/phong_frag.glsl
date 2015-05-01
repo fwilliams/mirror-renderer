@@ -1,30 +1,4 @@
-#version 430
-
-struct Light {
-	vec4 position;
-	vec4 diffuse;
-	vec4 specular;
-	float attenuation;
-	bool enabled;
-};
-
-struct Material {
-	vec4 diffuse;
-	vec4 specular;
-	float shine_exp;
-};
-
-
-layout(std140, binding=1) uniform PerFrameMatrixBlock {
-	mat4 modelview;
-	mat4 projection;
-	mat4 normal;
-};
-
-layout(std140, binding=2) uniform PerFrameLightingBlock {
-	vec4 global_ambient;
-	Light lights[10];
-};
+#pragma include "shaders/stddefs.glsl"
 
 layout(location = 3) uniform Material material;
 

@@ -1,8 +1,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <gli/gli.hpp>
-#include <gli/core/texture_cube.hpp>
 #include <iostream>
 
 #include "renderer.h"
@@ -12,7 +10,6 @@
 #include "utils/gl_utils.h"
 
 using namespace glm;
-using namespace gli;
 using namespace std;
 
 struct Material {
@@ -33,8 +30,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   vec2 cameraVelocity;
   vec2 cameraAngularVel;
 
-  // Skybox texture
-  textureCube skyboxTexture;
 
   // Geometry for a cube and a sphere
   Geometry sphereMesh;
@@ -124,17 +119,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     drawLightsProgram = ProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
                                                        "shaders/draw_lights_frag.glsl");
 
-    // Make a program to draw a skybox
-    drawSkyboxProgram = ProgramBuilder::buildFromFiles("shaders/cubemap_vert.glsl",
-                                                       "shaders/cubemap_frag.glsl");
-
 
     // Create geometry
     cubeMesh = Geometry::make_cube(vec3(1.0), false);
     sphereMesh = Geometry::make_sphere(1.5, 100, 100);
 
-
-    // skyboxTexture = textureCube(load_dds("textures/skybox_texture.dds"));
 
     // Setup the camera
     camera.setPosition(vec3(0.0, 1.0, -7.5));
@@ -148,7 +137,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
                 vec4(0.15, 0.15, 0.15, 1.0),
                 vec4(0.25, 0.25, 0.25, 1.0)};
     vec4 center(0.0, 15.0, -5.0, 1.0);
-    vec2 squareSize(2.5);
+    vec2 squareSize(42.5);
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
         size_t light_index = 3 * i + j;
@@ -228,14 +217,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->clearViewPort();
     rndr->startFrame();
 
-    // Draw the skybox
-//    rndr->setProgram(drawSkyboxProgram);
-//
-//    rndr->disableDepthBuffer();
-//    rndr->disableFaceCulling();
-//    rndr->draw(cubeMesh, translate(mat4(1.0), camera.getPosition()) * scale(mat4(1.0), vec3(2.0)));
-//    rndr->enableFaceCulling();
-//    rndr->enableDepthBuffer();
 
     // Draw the and the cube sphere
     rndr->setProgram(phongProgram);
