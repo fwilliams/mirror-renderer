@@ -14,8 +14,6 @@
 #define PROGRAM_BUILDER_H_
 
 struct ProgramBuilder {
-//  std::vector<std::string> includeDirs;
-
   static GLuint buildComputeProgramFromString(const std::string shader) {
     GLuint program = glCreateProgram();
 
