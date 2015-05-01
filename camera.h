@@ -9,6 +9,7 @@ class Camera {
   glm::vec3 lookat = glm::vec3(0.0, 0.0, 1.0);
   glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);
   glm::mat4 proj_mat;
+  glm::vec2 fov;
 
 public:
   void rotateX(float angle);
@@ -34,6 +35,22 @@ public:
   glm::vec3 getUpVector() const;
   glm::vec3 getRightVector() const;
   glm::vec3 getPosition() const;
+  float getFovY() const;
+  float getFovX() const;
 };
 
+class FirstPersonCamera : public Camera {
+  glm::vec2 moveCamera = glm::vec2(0, 0);
+  glm::vec2 cameraSphericalCoords;
+  glm::vec2 cameraVelocity;
+  glm::vec2 cameraAngularVel;
+
+public:
+  enum class CameraDirection { POSITIVE, NEGATIVE, STOPPED };
+  void setHorizontalDirection(const CameraDirection& dir);
+  void setVerticalDirection(const CameraDirection& dir);
+  void setDirection(const CameraDirection& dirHor, const CameraDirection& dirVert);
+  void updateLookat(const glm::vec2& pos);
+  void setCameraVelocity(const glm::vec2& vel);
+};
 #endif /* CAMERA_H_ */

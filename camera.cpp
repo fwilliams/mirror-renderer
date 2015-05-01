@@ -47,16 +47,26 @@ void Camera::setPosition(const vec3& position) {
 
 void Camera::setPerspectiveProjection(float left, float right, float bottom, float top,
     float near, float far) {
+  float width = abs(right - left);
+  float height = abs(top - bottom);
+  fov.x = atan(near / (width/2.0));
+  fov.y = atan(near / (height/2.0));
   proj_mat = frustum(left, right, bottom, top, near, far);
 }
 
 void Camera::setOrthographicProjection(float left, float right, float bottom, float top,
     float near, float far) {
+  float width = abs(right - left);
+  float height = abs(top - bottom);
+  fov.x = atan(near / (width/2.0));
+  fov.y = atan(near / (height/2.0));
   proj_mat = ortho(left, right, bottom, top, near, far);
 }
 
 void Camera::setPerspectiveProjection(float fov_y, float aspect, float near_z,
     float far_z) {
+  fov.y = fov_y;
+  fov.x = aspect * fov.y;
   proj_mat = perspective(fov_y, aspect, near_z, far_z);
 }
 
@@ -83,4 +93,13 @@ vec3 Camera::getRightVector() const {
 vec3 Camera::getPosition() const {
   return position;
 }
+
+float Camera::getFovY() const {
+  return fov.y;
+}
+
+float Camera::getFovX() const {
+  return fov.x;
+}
+
 
