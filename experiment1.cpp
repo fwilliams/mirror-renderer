@@ -38,7 +38,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   // Transformations for geometry in the scene
   mat4 cubeTransform = scale(translate(mat4(1.0), vec3(0.0, 4.0, 0.0)), vec3(4.0, 8.0, 4.0));
   mat4 sphereTransform = translate(mat4(1.0), vec3(-5.0, 1.5, -4.0));
-  mat4 planeTransform = scale(rotate(mat4(1.0), glm::half_pi<float>(), vec3(1.0, 0.0, 0.0)), vec3(1000.0));
+  mat4 planeTransform = scale(rotate(mat4(1.0), glm::half_pi<float>(), vec3(1.0, 0.0, 0.0)), vec3(10000.0));
 
   // Programs used to render objects in the scene
   GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0, drawSkyboxProgram = 0;
@@ -130,12 +130,12 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
 
     // Setup materials
-    cubeMaterial.diffuse = vec4(0.2, 0.2, 0.5, 1.0);
-    cubeMaterial.specular = vec4(0.3, 0.2, 0.15, 1.0);
+    cubeMaterial.diffuse = vec4(0.15, 0.75, 0.15, 1.0);
+    cubeMaterial.specular = vec4(0.0);//vec4(0.35, 0.35, 0.55, 1.0);
     cubeMaterial.shine = 1024.0f;
 
-    sphereMaterial.diffuse = vec4(0.75, 0.55, 0.55, 1.0);
-    sphereMaterial.specular = vec4(0.35, 0.35, 0.55, 1.0);
+    sphereMaterial.diffuse = vec4(0.15, 0.15, 0.75, 1.0);
+    sphereMaterial.specular = vec4(0.35, 0.55, 0.35, 1.0);
     sphereMaterial.shine = 256.0f;
 
 

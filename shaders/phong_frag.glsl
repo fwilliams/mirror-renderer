@@ -19,15 +19,17 @@ void main() {
 	
 	vec3 normal = normalize(v_normal);
 	for(uint i = 0; i < std_Lights.length(); i++) {
-		vec4 viewSpaceLightPos = std_View * std_Lights[i].position;
-		vec3 dirToLight = normalize(vec3(viewSpaceLightPos - v_position));
-		vec3 dirToViewer = normalize(-v_position.xyz);
-
-		std_Diffuse(dirToLight, normal, material, diffuse);
-		std_BlinnPhongSpecular(dirToLight, dirToViewer, normal, material, specular);
-		std_Attenuation(viewSpaceLightPos, std_Lights[i].attenuation, v_position, attenuation);
-		
-		fragcolor += attenuation * (diffuse * std_Lights[i].diffuse + specular * std_Lights[i].specular);
+		//if(std_Lights[i].enabled) {
+			vec4 viewSpaceLightPos = std_View * std_Lights[i].position;
+			vec3 dirToLight = normalize(vec3(viewSpaceLightPos - v_position));
+			vec3 dirToViewer = normalize(-v_position.xyz);
+	
+			std_Diffuse(dirToLight, normal, material, diffuse);
+			std_BlinnPhongSpecular(dirToLight, dirToViewer, normal, material, specular);
+			std_Attenuation(viewSpaceLightPos, std_Lights[i].attenuation, v_position, attenuation);
+			
+			fragcolor += attenuation * (diffuse * std_Lights[i].diffuse + specular * std_Lights[i].specular);
+		//}
 	}
 	
 	vec4 gamma = vec4(1.0/1.8);
