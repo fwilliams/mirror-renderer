@@ -160,6 +160,57 @@ public:
     return ret;
   }
 
+  static Geometry make_plane(unsigned uSamples, unsigned vSamples) {
+    unsigned numVertices = (uSamples+1) * (vSamples+1);
+    unsigned numIndices = uSamples * vSamples * 6;
+
+    Geometry ret(numVertices, numIndices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
+    GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
+
+    for(unsigned i = 0; i <= uSamples; i++) {
+      for(unsigned j = 0; j <= vSamples; j++) {
+        const glm::vec2 vPos = (glm::vec2(i, j) -
+                                glm::vec2(static_cast<float>(uSamples)/2.0,
+                                         static_cast<float>(vSamples)/2.0)) *
+                               glm::vec2(1.0/(uSamples+1), 1.0/(vSamples+1));
+        std::cout << glm::to_string(vPos) << std::endl;
+        const size_t vOffset = i*(uSamples + 1) + j;
+
+        vertices[vOffset].position = glm::vec4(vPos, 0.0, 1.0);
+        vertices[vOffset].texcoord = vPos + glm::vec2(0.5);
+        vertices[vOffset].normal = glm::vec3(0.0, 0.0, -1.0);
+      }
+    }
+
+    for(unsigned i = 0; i < uSamples; i++) {
+      for(unsigned j = 0; j < vSamples; j++) {
+        const size_t iOffset = (i*uSamples + j) * 6;
+        const size_t iBase = i*(uSamples+1) + j;
+
+        indices[iOffset + 0] = iBase;
+        indices[iOffset + 1] = iBase + 1;
+        indices[iOffset + 2] = iBase + uSamples + 1;
+
+        indices[iOffset + 3] = iBase + 1;
+        indices[iOffset + 4] = iBase + uSamples + 2;
+        indices[iOffset + 5] = iBase + uSamples + 1;
+      }
+    }
+
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return ret;
+  }
+
   static Geometry make_triangle() {
     Geometry ret(3, 3);
 
@@ -171,9 +222,13 @@ public:
     vertices[0].position = {-0.5, -0.5, 0.0, 1.0 };
     vertices[1].position = { 0.5, -0.5, 0.0, 1.0 };
     vertices[2].position = { 0.0,  0.5, 0.0, 1.0 };
+    vertices[0].normal = { 0.0, 0.0, 1.0 };
+    vertices[1].normal = { 0.0, 0.0, 1.0 };
+    vertices[2].normal = { 0.0, 0.0, 1.0 };
     indices[0] = 0;
     indices[1] = 1;
     indices[2] = 2;
+
 
     compute_normals(vertices, indices, ret.num_indices);
 

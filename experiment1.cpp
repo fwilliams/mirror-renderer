@@ -26,9 +26,10 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   FirstPersonCamera camera;
   const float FOV_Y = 45.0f;
 
-  // Geometry for a cube and a sphere
-  Geometry sphereMesh;
+  // Geometry for a cube, a plane, and a sphere
   Geometry cubeMesh;
+  Geometry planeMesh;
+  Geometry sphereMesh;
 
   // Materials for the sphere and cube
   Material sphereMaterial;
@@ -36,7 +37,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   // Transformations for geometry in the scene
   mat4 cubeTransform = scale(translate(mat4(1.0), vec3(0.0, 4.0, 0.0)), vec3(4.0, 8.0, 4.0));
-  mat4 sphereTransform = translate(mat4(1.0), vec3(-5.0, 3.5, -4.0));
+  mat4 sphereTransform = translate(mat4(1.0), vec3(-5.0, 1.5, -4.0));
+  mat4 planeTransform = scale(rotate(mat4(1.0), glm::half_pi<float>(), vec3(1.0, 0.0, 0.0)), vec3(1000.0));
 
   // Programs used to render objects in the scene
   GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0, drawSkyboxProgram = 0;
@@ -91,7 +93,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Create geometry
     cubeMesh = Geometry::make_cube(vec3(1.0), false);
     sphereMesh = Geometry::make_sphere(1.5, 100, 100);
-
+    planeMesh = Geometry::make_plane(100, 100);
 
     // Setup the camera
     camera.setPosition(vec3(0.0, 1.0, -7.5));
@@ -117,7 +119,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     }
 
     Light l2 = {vec4(0.0, 2.0, -5.0, 1.0),
-                vec4(0.3525, 0.4525, 0.3525, 1.0),
+                vec4(0.3525, 0.3525, 0.3525, 1.0),
                 vec4(0.1, 0.1, 0.1, 1.0) };
     rndr->enableLight(9);
     rndr->setLight(9, l2);
@@ -129,11 +131,11 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     // Setup materials
     cubeMaterial.diffuse = vec4(0.2, 0.2, 0.5, 1.0);
     cubeMaterial.specular = vec4(0.3, 0.2, 0.15, 1.0);
-    cubeMaterial.shine = 256.0f;
+    cubeMaterial.shine = 1024.0f;
 
-    sphereMaterial.diffuse = vec4(0.35, 0.2, 0.25, 1.0);
-    sphereMaterial.specular = vec4(0.25, 0.3, 0.15, 1.0);
-    sphereMaterial.shine = 1024.0f;
+    sphereMaterial.diffuse = vec4(0.75, 0.55, 0.55, 1.0);
+    sphereMaterial.specular = vec4(0.35, 0.35, 0.55, 1.0);
+    sphereMaterial.shine = 256.0f;
 
 
     // Move mouse cursor to the middle of the screen and hide it
@@ -181,16 +183,15 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->clearViewPort();
     rndr->startFrame();
 
-
     // Draw the and the cube sphere
     rndr->setProgram(phongProgram);
 
     setMaterial(cubeMaterial);
-    rndr->draw(cubeMesh, cubeTransform);
+    rndr->draw(planeMesh, planeTransform);
 
     setMaterial(sphereMaterial);
+    rndr->draw(cubeMesh, cubeTransform);
     rndr->draw(sphereMesh, sphereTransform);
-
 
     // Draw a cube over each light
     rndr->setProgram(drawLightsProgram);
