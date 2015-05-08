@@ -57,6 +57,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(color2));
     rndr->draw(sphereMesh.normal_view_vao, sphereMesh.num_vertices * 2, sphereTransform);
     rndr->draw(cubeMesh.normal_view_vao, cubeMesh.num_vertices * 2, cubeTransform);
+    rndr->draw(planeMesh.normal_view_vao, planeMesh.num_vertices * 2, planeTransform);
     for(size_t i = 0; i < rndr->numLights(); i++) {
       const mat4 lightTransform = scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1));
       rndr->draw(cubeMesh.normal_view_vao, (size_t)(cubeMesh.num_vertices * 2), lightTransform);

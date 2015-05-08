@@ -177,7 +177,6 @@ public:
                                 glm::vec2(static_cast<float>(uSamples)/2.0,
                                          static_cast<float>(vSamples)/2.0)) *
                                glm::vec2(1.0/(uSamples+1), 1.0/(vSamples+1));
-        std::cout << glm::to_string(vPos) << std::endl;
         const size_t vOffset = i*(uSamples + 1) + j;
 
         vertices[vOffset].position = glm::vec4(vPos, 0.0, 1.0);
@@ -199,6 +198,17 @@ public:
         indices[iOffset + 4] = iBase + uSamples + 2;
         indices[iOffset + 5] = iBase + uSamples + 1;
       }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, ret.normal_view_vbo);
+    glm::vec4* normals = reinterpret_cast<glm::vec4*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+
+    for(unsigned j = 0, i = 0; j < ret.num_vertices; i+=2) {
+      normals[i] = vertices[j].position;
+      normals[i+1] = normals[i] + glm::vec4(vertices[j].normal, 1.0f);
+      normals[i].w = 0.0;
+      normals[i+1].w = 1.0;
+      j+=1;
     }
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
