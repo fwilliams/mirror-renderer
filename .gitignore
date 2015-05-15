@@ -26,4 +26,11 @@
 *.exe
 *.out
 *.app
+/build
+
+# IDE project things
 /Debug/
+.cproject
+.project
+.idea
+.settings
