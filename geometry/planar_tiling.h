@@ -5,7 +5,7 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include "../utils/glm_hash.hpp"
+#include "utils/glm_hash.hpp"
 
 #ifndef GEOMETRY_PLANAR_TILING_H_
 #define GEOMETRY_PLANAR_TILING_H_
