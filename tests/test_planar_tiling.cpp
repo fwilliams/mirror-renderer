@@ -74,13 +74,77 @@ BOOST_AUTO_TEST_CASE(test_grid_of_tri_tiles) {
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 19);
 }
 
+BOOST_AUTO_TEST_CASE(test_tri_immediate_neighbors) {
+  auto pred = [] (const ivec2& v) {
+    auto c = { ivec2(0, 0), ivec2(1, 0), ivec2(0, -1), ivec2(1, 1) };
+    for(auto i = c.begin(); i != c.end(); i++) {
+      if(*i == v) { return true; }
+    }
+    return false;
+  };
+
+  TriPlanarTileSet tps;
+  tps.addTilesInNeighborhood(ivec2(0, 0), pred);
+  BOOST_CHECK_EQUAL(tps.edgeCount(), 9);
+  BOOST_CHECK_EQUAL(tps.vertexCount(), 6);
+  BOOST_CHECK_EQUAL(tps.tileCount(), 4);
+}
+
+BOOST_AUTO_TEST_CASE(test_quad_immediate_neighbors) {
+  auto pred = [] (const ivec2& v) {
+    auto c = { ivec2(0, 0), ivec2(1, 0), ivec2(0, -1), ivec2(-1, 0), ivec2(0, 1) };
+    for(auto i = c.begin(); i != c.end(); i++) {
+      if(*i == v) { return true; }
+    }
+    return false;
+  };
+
+  QuadPlanarTileSet tps;
+  tps.addTilesInNeighborhood(ivec2(0, 0), pred);
+  BOOST_CHECK_EQUAL(tps.edgeCount(), 16);
+  BOOST_CHECK_EQUAL(tps.vertexCount(), 12);
+  BOOST_CHECK_EQUAL(tps.tileCount(), 5);
+}
+
+BOOST_AUTO_TEST_CASE(test_hex_immediate_neighbors) {
+  auto pred = [] (const ivec2& v) {
+    auto c = { ivec2(0, 0), ivec2(1, 0), ivec2(-1, 0),
+               ivec2(0, 1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, 1) };
+    for(auto i = c.begin(); i != c.end(); i++) {
+      if(*i == v) { return true; }
+    }
+    return false;
+  };
+
+  HexPlanarTileSet tps;
+  tps.addTilesInNeighborhood(ivec2(0, 0), pred);
+  BOOST_CHECK_EQUAL(tps.edgeCount(), 30);
+  BOOST_CHECK_EQUAL(tps.vertexCount(), 24);
+  BOOST_CHECK_EQUAL(tps.tileCount(), 7);
+}
+
+BOOST_AUTO_TEST_CASE(test_small_hex_neighborhood) {
+  auto pred = [] (const ivec2& v) {
+    auto c = { ivec2(0, 0), ivec2(1, 0), ivec2(-1, 0),
+               ivec2(0, 1), ivec2(0, -1), ivec2(1, -1), ivec2(-1, -1) };
+    for(auto i = c.begin(); i != c.end(); i++) {
+      if(*i == v) { return true; }
+    }
+    return false;
+  };
+
+  HexPlanarTileSet tps;
+  tps.addTilesInNeighborhood(ivec2(0, 0), pred);
+  BOOST_CHECK_EQUAL(tps.edgeCount(), 31);
+  BOOST_CHECK_EQUAL(tps.vertexCount(), 25);
+  BOOST_CHECK_EQUAL(tps.tileCount(), 7);
+}
+
 BOOST_AUTO_TEST_CASE(test_hourglass_tri_tiles_only_captures_tri_in_neighborhood) {
   auto hourGlass = [] (const ivec2& v) {
     auto c = { ivec2(0, 0), ivec2(1, 3) };
     for(auto i = c.begin(); i != c.end(); i++) {
-      if(*i == v) {
-        return true;
-      }
+      if(*i == v) { return true; }
     }
     return false;
   };
