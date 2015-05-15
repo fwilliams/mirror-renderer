@@ -13,7 +13,7 @@
 #ifndef PROGRAM_BUILDER_H_
 #define PROGRAM_BUILDER_H_
 
-struct ProgramBuilder {
+struct GLProgramBuilder {
   static GLuint buildComputeProgramFromString(const std::string shader) {
     GLuint program = glCreateProgram();
 

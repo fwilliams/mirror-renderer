@@ -5,8 +5,8 @@
 
 #include "renderer.h"
 #include "camera.h"
-#include "utils/sdl_gl_window.h"
 #include "utils/gl_program_builder.h"
+#include "utils/sdl_gl_window.h"
 #include "utils/gl_utils.h"
 
 using namespace glm;
@@ -34,6 +34,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   // Materials for the sphere and cube
   Material sphereMaterial;
   Material cubeMaterial;
+  Material planeMaterial;
 
   // Transformations for geometry in the scene
   mat4 cubeTransform = scale(translate(mat4(1.0), vec3(0.0, 4.0, 0.0)), vec3(4.0, 8.0, 4.0));
@@ -79,15 +80,15 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
 
     // Build shader programs
-    phongProgram = ProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
+    phongProgram = GLProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
                                                   "shaders/phong_frag.glsl");
 
     // Make debug program which draws the normals of a piece of geometry
-    drawNormalsProgram = ProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
+    drawNormalsProgram = GLProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
                                                         "shaders/draw_normals_frag.glsl");
 
     // Make program to draw lights
-    drawLightsProgram = ProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
+    drawLightsProgram = GLProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
                                                        "shaders/draw_lights_frag.glsl");
 
 
@@ -130,12 +131,16 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
 
     // Setup materials
-    cubeMaterial.diffuse = vec4(0.15, 0.75, 0.15, 1.0);
-    cubeMaterial.specular = vec4(0.0);//vec4(0.35, 0.35, 0.55, 1.0);
+    planeMaterial.diffuse = vec4(0.15, 0.75, 0.15, 1.0);
+    planeMaterial.specular = vec4(0.0);//vec4(0.35, 0.35, 0.55, 1.0);
+    planeMaterial.shine = 0.0f;
+
+    cubeMaterial.diffuse = vec4(0.15, 0.15, 0.75, 1.0);
+    cubeMaterial.specular = vec4(0.05, 0.05, 0.15, 1.0);
     cubeMaterial.shine = 1024.0f;
 
-    sphereMaterial.diffuse = vec4(0.15, 0.15, 0.75, 1.0);
-    sphereMaterial.specular = vec4(0.35, 0.55, 0.35, 1.0);
+    sphereMaterial.diffuse = vec4(0.75, 0.15, 0.15, 1.0);
+    sphereMaterial.specular = vec4(0.05, 0.05, 0.15, 1.0);
     sphereMaterial.shine = 256.0f;
 
 
@@ -181,18 +186,21 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 
   void draw(SDLGLWindow& w) {
-    rndr->clearViewPort();
+    rndr->clearViewport();
     rndr->startFrame();
 
+    glPointSize(100.0);
     // Draw the and the cube sphere
     rndr->setProgram(phongProgram);
 
-    setMaterial(cubeMaterial);
+    setMaterial(planeMaterial);
     rndr->draw(planeMesh, planeTransform);
 
-    setMaterial(sphereMaterial);
+    setMaterial(cubeMaterial);
     rndr->draw(cubeMesh, cubeTransform);
-    rndr->draw(sphereMesh, sphereTransform);
+
+    setMaterial(sphereMaterial);
+    rndr->draw(sphereMesh, sphereTransform, Renderer::PrimitiveType::POINTS);
 
     // Draw a cube over each light
     rndr->setProgram(drawLightsProgram);
@@ -224,7 +232,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 };
 
-int main(int argc, char** argv) {
-  SimpleMirrorGLWindow w(1024, 768);
-  w.mainLoop();
-}
+//int main(int argc, char** argv) {
+//  SimpleMirrorGLWindow w(1024, 768);
+//  w.mainLoop();
+//}

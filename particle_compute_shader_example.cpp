@@ -27,7 +27,7 @@ public:
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    particlePo = ProgramBuilder::buildComputeProgramFromFile("shaders/simple_particles.glsl");
+    particlePo = GLProgramBuilder::buildComputeProgramFromFile("shaders/simple_particles.glsl");
 
     glGenBuffers(1, &posSSbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, posSSbo);

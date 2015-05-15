@@ -58,7 +58,7 @@ void Renderer::startFrame() {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void Renderer::draw(GLuint vao, size_t num_vertices, const glm::mat4& transform) {
+void Renderer::draw(GLuint vao, size_t num_vertices, const glm::mat4& transform, const PrimitiveType& pType) {
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
   perFrameData.modelview_matrix = view() * transform;
   perFrameData.normal_matrix = transpose(inverse(mat4(mat3(perFrameData.modelview_matrix))));
@@ -66,11 +66,11 @@ void Renderer::draw(GLuint vao, size_t num_vertices, const glm::mat4& transform)
                   value_ptr(perFrameData.modelview_matrix));
 
   glBindVertexArray(vao);
-  glDrawArrays(GL_LINES, 0, num_vertices);
+  glDrawArrays(pType, 0, num_vertices);
   glBindVertexArray(0);
 }
 
-void Renderer::draw(const Geometry& geometry, const glm::mat4& transform) {
+void Renderer::draw(const Geometry& geometry, const glm::mat4& transform, const PrimitiveType& pType) {
   glBindBuffer(GL_UNIFORM_BUFFER, per_frame_ubo);
   perFrameData.modelview_matrix = view() * transform;
   perFrameData.normal_matrix = transpose(inverse(mat4(mat3(perFrameData.modelview_matrix))));
@@ -79,7 +79,7 @@ void Renderer::draw(const Geometry& geometry, const glm::mat4& transform) {
 
   glBindVertexArray(geometry.vao);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry.ibo);
-  glDrawElements(GL_TRIANGLES, geometry.num_indices, GL_UNSIGNED_INT, nullptr);
+  glDrawElements(pType, geometry.num_indices, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

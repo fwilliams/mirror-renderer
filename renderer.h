@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "utils/geometry.h"
+#include "geometry/3d_primitives.h"
 
 #ifndef RENDERER_H_
 #define RENDERER_H_
@@ -14,8 +14,9 @@ struct Light {
   glm::vec4 diffuse;
   glm::vec4 specular;
   glm::float32 attenuation;
-  glm::bvec1 enabled;
-  glm::vec2 dummy;
+  glm::float32 enabled;
+  glm::float32 dummy1;
+  glm::float32 dummy2;
 };
 
 class Renderer {
@@ -39,6 +40,7 @@ class Renderer {
 
 public:
   enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
+  enum PrimitiveType { TRIANGLES = GL_TRIANGLES, LINES = GL_LINES, POINTS = GL_POINTS };
   enum WindingMode { CW, CCW };
 
   Renderer();
@@ -46,13 +48,13 @@ public:
 
   void startFrame();
 
-  void draw(GLuint vao, size_t num_vertices, const glm::mat4& transform);
+  void draw(GLuint vao, size_t num_vertices, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
-  void draw(const Geometry& geometry, const glm::mat4& transform);
+  void draw(const Geometry& geometry, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
   void setProgram(GLuint program);
 
-  void clearViewPort() {
+  void clearViewport() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
 
@@ -125,11 +127,11 @@ public:
   }
 
   void disableLight(GLuint light) {
-    perFrameData.lights[light].enabled = glm::bvec1(false);
+    perFrameData.lights[light].enabled = 0.0; //glm::bvec1(false);
   }
 
   void enableLight(GLuint light) {
-    perFrameData.lights[light].enabled = glm::bvec1(true);
+    perFrameData.lights[light].enabled = 1.0; //glm::bvec1(true);
   }
 
   void setViewMatrix(const glm::mat4& matrix) {

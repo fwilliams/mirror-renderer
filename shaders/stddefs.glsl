@@ -3,7 +3,7 @@ struct Light {
 	vec4 diffuse;
 	vec4 specular;
 	float attenuation;
-	bool enabled;
+	float enabled;
 };
 
 struct Material {

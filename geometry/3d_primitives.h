@@ -6,27 +6,60 @@
 #include <algorithm>
 #include <type_traits>
 #include <iostream>
+#include <tuple>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "gl_utils.h"
+#include "../utils/gl_utils.h"
 
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
-struct vertex {
+struct vertexPosNormTex {
   glm::vec4 position;
   glm::vec3 normal;
   glm::vec2 texcoord;
 };
 
 class Geometry {
+public:
+  template <typename... VertexAttribs>
+  static Geometry fromVertexAttribs(GLuint num_vertices, GLuint num_indices) {
+    Geometry g;
+    g.num_vertices = num_vertices;
+    g.num_indices = num_indices;
+
+    glGenBuffers(1, &g.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, g.vbo);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(std::tuple<VertexAttribs...>),
+                 nullptr, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &g.ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), nullptr, GL_STATIC_DRAW);
+
+    g.vao = VAOGenerator::generateAttribArray<VertexAttribs...>(0);
+
+    glGenBuffers(1, &g.normal_view_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, g.normal_view_vbo);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * 2 * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &g.normal_view_vao);
+    glBindVertexArray(g.normal_view_vao);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    return g;
+  }
+
   Geometry(GLuint num_vertices, GLuint num_indices) : num_vertices(num_vertices), num_indices(num_indices) {
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(vertex), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(vertexPosNormTex), nullptr, GL_STATIC_DRAW);
 
     glGenBuffers(1, &ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -35,11 +68,11 @@ class Geometry {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertexPosNormTex), 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*) sizeof(glm::vec4));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertexPosNormTex), (void*) sizeof(glm::vec4));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex),
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertexPosNormTex),
         (void*) (sizeof(glm::vec4) + sizeof(glm::vec3)));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -56,7 +89,6 @@ class Geometry {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-public:
   Geometry() {}
   ~Geometry() {
 //    glDeleteBuffers(1, &vbo);
@@ -74,10 +106,10 @@ public:
   size_t num_vertices = 0;
   size_t num_indices = 0;
 
-  static void compute_normals(vertex* vertices, GLuint* indices, size_t num_indices) {
+  static void compute_normals(vertexPosNormTex* vertices, GLuint* indices, size_t num_indices) {
     // Compute the normals of each triangle
     for(unsigned i = 0; i < num_indices; i += 3) {
-      vertex* verts [] {
+      vertexPosNormTex* verts [] {
         &vertices[indices[i]], &vertices[indices[i+1]], &vertices[indices[i+2]]
       };
 
@@ -94,7 +126,7 @@ public:
   static Geometry make_cube(const glm::vec3& scale, bool invertNormals = false) {
     Geometry ret(8, 36);
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    vertexPosNormTex* vertices = reinterpret_cast<vertexPosNormTex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
     glBindBuffer(GL_ARRAY_BUFFER, ret.ibo);
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
@@ -167,7 +199,7 @@ public:
     Geometry ret(numVertices, numIndices);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    vertexPosNormTex* vertices = reinterpret_cast<vertexPosNormTex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
@@ -225,7 +257,7 @@ public:
     Geometry ret(3, 3);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    vertexPosNormTex* vertices = reinterpret_cast<vertexPosNormTex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
@@ -268,7 +300,7 @@ public:
 
     // Map vertex and index buffer objects for the sphere
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-    vertex* vertices = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+    vertexPosNormTex* vertices = reinterpret_cast<vertexPosNormTex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
     GLuint* indices = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
