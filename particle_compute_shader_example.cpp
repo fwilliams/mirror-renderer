@@ -101,3 +101,8 @@ public:
   }
 };
 
+int main(int argc, char** argv) {
+  ParticleExampleGLWindow w(1024, 1024);
+  w.mainLoop();
+}
+

@@ -1,18 +1,13 @@
 #include <iostream>
 #include <tuple>
-#include <functional>
-#include <unordered_set>
 
 #include <glm/glm.hpp>
-#include "utils/glm_hash.hpp" // TODO: Wait for next version of GLM
 
 #include "utils/gl_utils.h"
 #include "utils/sdl_gl_window.h"
 #include "utils/gl_program_builder.h"
-#include "renderer.h"
-#include "camera.h"
-#include "geometry/3d_primitives.h"
-//#include "geometry/planar_tiling.h"
+#include "renderer/renderer.h"
+#include "renderer/camera.h"
 
 using namespace std;
 using namespace glm;
@@ -179,7 +174,6 @@ public:
 
     setMousePosition(w.width()/2, w.height()/2);
     showCursor(false);
-
   }
 
   void draw(SDLGLWindow& w) {
@@ -192,33 +186,7 @@ public:
   }
 };
 
-//int main(int argc, char** argv) {
-//
-//  function<bool(const ivec2&)> p = [] (const ivec2& t) {
-//    auto coll = {
-//        ivec2(0, 0),
-//        ivec2(1, 0),
-//        ivec2(2, 0),
-//        ivec2(1, 1),
-//        ivec2(2, 1),
-//        ivec2(2, 2),
-//        ivec2(0, -1),
-//        ivec2(1, -1),
-//        ivec2(0, -2)
-//    };
-//    for(auto i = coll.begin(); i != coll.end(); i++) {
-//      if(*i == t) {
-//        return true;
-//      }
-//    }
-//    return false;
-//  };
-//  PlanarTileSet<PlanarTileType::QUAD> test(p);
-//  test.addTilesInNeighborhood(ivec2(0, 0));
-//
-//  cout << test.edgeCount() << endl;
-//  cout << test.size() << endl;
-//
-//  ProjectedTileVizWindow w(1024, 1024);
-//  w.mainLoop();
-//}
+int main(int argc, char** argv) {
+  ProjectedTileVizWindow w(1024, 1024);
+  w.mainLoop();
+}

@@ -1,13 +1,12 @@
-
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Geometry
 
 #include <boost/test/unit_test.hpp>
 
-#include "../geometry/planar_tiling.h"
+#include "geometry/planar_tiling.h"
 
 using namespace glm;
 using namespace std;
+using namespace geometry;
 
 struct PlanarTileSetFixture {
   function<bool(const ivec2&)> isInGrid = [](const ivec2& v) {
@@ -33,31 +32,34 @@ using namespace glm;
 BOOST_FIXTURE_TEST_SUITE(PlanarTileSetTests, PlanarTileSetFixture)
 
 BOOST_AUTO_TEST_CASE(test_trivial_quad) {
-  PlanarTiling<PlanarTileType::QUAD> testTileset;
-  testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
-  BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
-  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
-  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 24);
+  QuadPlanarTileSet testTileset;
+  auto derp = [](const glm::ivec2& v) { return v == glm::ivec2(0, 0); };
+  testTileset.addTilesInNeighborhood(ivec2(0), derp);
+  BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
+  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 4);
+  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 4);
 }
 
 BOOST_AUTO_TEST_CASE(test_trivial_tri) {
-  PlanarTiling<PlanarTileType::QUAD> testTileset;
-  testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
-  BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
-  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
-  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 24);
+  TriPlanarTileSet testTileset;
+  auto derp = [](const glm::ivec2& v) { return v == glm::ivec2(0, 0); };
+  testTileset.addTilesInNeighborhood(ivec2(0), derp);
+  BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
+  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 3);
+  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 3);
 }
 
 BOOST_AUTO_TEST_CASE(test_trivial_hex) {
-  PlanarTiling<PlanarTileType::QUAD> testTileset;
-  testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
-  BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
-  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
-  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 24);
+  HexPlanarTileSet testTileset;
+  auto derp = [](const glm::ivec2& v) { return v == glm::ivec2(0, 0); };
+  testTileset.addTilesInNeighborhood(ivec2(0), derp);
+  BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
+  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 6);
+  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 6);
 }
 
 BOOST_AUTO_TEST_CASE(test_grid_of_quad_tiles) {
-  PlanarTiling<PlanarTileType::QUAD> testTileset;
+  QuadPlanarTileSet testTileset;
   testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
@@ -65,7 +67,7 @@ BOOST_AUTO_TEST_CASE(test_grid_of_quad_tiles) {
 }
 
 BOOST_AUTO_TEST_CASE(test_grid_of_tri_tiles) {
-  PlanarTiling<PlanarTileType::TRI> testTileset;
+  TriPlanarTileSet testTileset;
   testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 11);
@@ -83,7 +85,7 @@ BOOST_AUTO_TEST_CASE(test_hourglass_tri_tiles_only_captures_tri_in_neighborhood)
     return false;
   };
 
-  PlanarTiling<PlanarTileType::TRI> testTileset;
+  TriPlanarTileSet testTileset;
   testTileset.addTilesInNeighborhood(ivec2(0), hourGlass);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 3);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 3);
@@ -101,7 +103,7 @@ BOOST_AUTO_TEST_CASE(test_quads_with_one_vertex_overlap) {
     return false;
   };
 
-  PlanarTiling<PlanarTileType::QUAD> testTileset;
+  QuadPlanarTileSet testTileset;
   testTileset.addTilesInNeighborhood(ivec2(0), pred);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 4);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 4);

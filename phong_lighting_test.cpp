@@ -3,11 +3,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-#include "renderer.h"
-#include "camera.h"
+#include "renderer/renderer.h"
+#include "renderer/camera.h"
 #include "utils/gl_program_builder.h"
 #include "utils/sdl_gl_window.h"
-#include "utils/gl_utils.h"
 
 using namespace glm;
 using namespace std;
@@ -189,7 +188,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->clearViewport();
     rndr->startFrame();
 
-    glPointSize(100.0);
     // Draw the and the cube sphere
     rndr->setProgram(phongProgram);
 
@@ -200,7 +198,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->draw(cubeMesh, cubeTransform);
 
     setMaterial(sphereMaterial);
-    rndr->draw(sphereMesh, sphereTransform, Renderer::PrimitiveType::POINTS);
+    rndr->draw(sphereMesh, sphereTransform);
 
     // Draw a cube over each light
     rndr->setProgram(drawLightsProgram);
@@ -232,7 +230,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
   }
 };
 
-//int main(int argc, char** argv) {
-//  SimpleMirrorGLWindow w(1024, 768);
-//  w.mainLoop();
-//}
+int main(int argc, char** argv) {
+  SimpleMirrorGLWindow w(1024, 768);
+  w.mainLoop();
+}
