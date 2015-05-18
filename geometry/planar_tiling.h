@@ -76,35 +76,46 @@ namespace geometry {
 
     template <PlanarTileType TYPE>
     struct TileTopologyPolicy {
-      std::array<glm::ivec2, vertsPerTile<TYPE>()>verticesForTile(const glm::ivec2& tile);
-      std::array<glm::ivec2, vertsPerTile<TYPE>()> tAdjacentTiles(const glm::ivec2& tile);
-      std::array<glm::ivec2, tilesPerVertex<TYPE>()> vAdjacentTiles(const glm::ivec2& vertex);
+      std::array<glm::ivec2, vertsPerTile<TYPE>()>adjacentVerticesForTile(const glm::ivec2& tile) const;
+      std::array<glm::ivec2, vertsPerTile<TYPE>()> adjacentTilesForTile(const glm::ivec2& tile) const;
+      std::array<glm::ivec2, tilesPerVertex<TYPE>()> adjacentTilesForVertex(const glm::ivec2& vertex) const;
+      std::array<glm::ivec2, tilesPerVertex<TYPE>()> adjacentVerticesForVertex(const glm::ivec2& vertex) const;
 
-      static size_t const VERTEX_COUNT = vertsPerTile<TYPE>();
-      static size_t const ADJ_FACE_COUNT = vertsPerTile<TYPE>();
+      static size_t const NUM_ADJ_VERTS_PER_TILE = vertsPerTile<TYPE>();
+      static size_t const NUM_ADJ_TILES_PER_TILE = vertsPerTile<TYPE>();
+      static size_t const NUM_ADJ_TILES_PER_VERT = tilesPerVertex<TYPE>();
+      static size_t const NUM_ADJ_VERTS_PER_VERT = tilesPerVertex<TYPE>();
     };
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::verticesForTile(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
       return {tile, right(tile), upright(tile), up(tile)};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::tAdjacentTiles(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForTile(const glm::ivec2 &tile) const {
       return {right(tile), up(tile), left(tile), down(tile)};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::vAdjacentTiles(const glm::ivec2 &v) {
+    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForVertex(const glm::ivec2 &v) const {
       return {v, left(v), downleft(v), down(v) };
     }
 
     template<>
+    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::QUAD>()>
+    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForVertex(const glm::ivec2& v) const {
+      return {up(v), right(v), down(v), left(v)};
+    }
+
+
+
+    template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::verticesForTile(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
       if (tile.y % 2 == 0) {
         glm::ivec2 t(tile.x, tile.y / 2);
         return {t, right(t), upright(t)};
@@ -116,7 +127,7 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::tAdjacentTiles(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForTile(const glm::ivec2 &tile) const {
       if (tile.y % 2 == 0) {
         return {down(tile), upright(tile), up(tile)};
       } else {
@@ -126,13 +137,21 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::vAdjacentTiles(const glm::ivec2& v) {
+    TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForVertex(const glm::ivec2& v) const {
       return { v, up(v), left(v), downleft(v), down(downleft(v)), down(v) };
     }
 
     template<>
+    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
+    TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForVertex(const glm::ivec2& v) const {
+      return {up(v), upright(v), right(v), down(v), downleft(v), left(v)};
+    }
+
+
+
+    template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::verticesForTile(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::HEX>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
       glm::ivec2 t(2*tile.x+tile.y, tile.x + 2*tile.y);
       return { t, right(t), glm::ivec2(t.x+2, t.y+1),
                glm::ivec2(t.x+2, t.y+2), glm::ivec2(t.x+1, t.y+2), up(t) };
@@ -140,53 +159,130 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::tAdjacentTiles(const glm::ivec2 &v) {
+    TileTopologyPolicy<PlanarTileType::HEX>::adjacentTilesForTile(const glm::ivec2 &v) const {
       return {};
     }
+
+    template<>
+    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::HEX>()>
+    TileTopologyPolicy<PlanarTileType::HEX>::adjacentVerticesForVertex(const glm::ivec2& v) const {
+      return {};
+    }
+
+
 
     template<class TYPE, class TOPOLOGY>
     class PlanarTileMap : private TOPOLOGY {
     public:
+      struct Vertex;
+      struct Tile;
+
       struct Tile {
-        glm::ivec2 key;
-        size_t adjTileSize = 0;
+        glm::ivec2 id;
+        size_t adjacentTileSize = 0;
 
         size_t numAdjacentTiles() const {
-          return adjTileSize;
+          return adjacentTileSize;
         }
 
         glm::ivec2 tileId() const {
-          return key;
+          return id;
         }
 
-        std::array<glm::ivec2, TOPOLOGY::VERTEX_COUNT> vertices;
-        std::array<const Tile*, TOPOLOGY::ADJ_FACE_COUNT> adjacentTiles;
-        typedef typename decltype(vertices)::iterator vertexiterator;
-        typedef typename decltype(vertices)::iterator tileiterator;
+        std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_TILE> adjacentTiles;
+        std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> adjacentVertices;
 
-        vertexiterator vertices_begin() const { return vertices.begin(); }
-        tileiterator tiles_begin() const { return tiles.begin(); }
-        vertexiterator vertices_end() const { return vertices.end(); }
-        tileiterator tiles_end() const { return tiles.begin() + adjTileSize; }
+        typedef typename decltype(adjacentVertices)::iterator vertexiterator;
+        typedef typename decltype(adjacentVertices)::iterator tileiterator;
+
+        tileiterator tiles_begin() const { return adjacentTiles.begin(); }
+        tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
+
+        vertexiterator vertices_begin() const { return adjacentVertices.begin(); }
+        vertexiterator vertices_end() const { return adjacentVertices.end(); }
 
         TYPE data;
       };
 
+      struct Vertex {
+        glm::ivec2 id;
+        size_t adjacentTileSize = 0;
+        size_t adjacentVertsSize = 0;
+
+        size_t numAdjacentTiles() const {
+          return adjacentTileSize;
+        }
+
+        size_t numAdjacentVertices() const {
+          return adjacentVertsSize;
+        }
+
+        glm::ivec2 vertexId() const {
+          return id;
+        }
+
+        std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_VERT> adjacentTiles;
+        std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_VERT> adjacentVertices;
+
+        typedef typename decltype(adjacentVertices)::iterator vertexiterator;
+        typedef typename decltype(adjacentVertices)::iterator tileiterator;
+
+        vertexiterator vertices_begin() const { return adjacentVertices.begin(); }
+        vertexiterator vertices_end() const { return adjacentVertices.begin() + adjacentVertsSize; }
+
+        tileiterator tiles_begin() const { return adjacentTiles.begin(); }
+        tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
+      };
+
     private:
       std::unordered_map<glm::ivec2, Tile> tiles;
-      std::unordered_set<glm::ivec2> verts;
+      std::unordered_map<glm::ivec2, Vertex> verts;
 
       Tile* findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2 &)> &pred) {
+        // Insert the new tile into the tile map
         auto tileData = &tiles[tile];
-        tileData->vertices = this->verticesForTile(tile);
+        tileData->id = tile;
 
-        auto adjTileInds = this->tAdjacentTiles(tile);
+        auto adjacentVertIds = this->adjacentVerticesForTile(tile);
+        auto adjacentTileIds = this->adjacentTilesForTile(tile);
 
-        verts.insert(tileData->vertices.begin(), tileData->vertices.end());
+        // Insert adjacent tiles into tile map and update Tile data structure
+        for(auto i = adjacentTileIds.begin(); i != adjacentTileIds.end(); i++) {
+          auto tile = tiles.find(*i);
+          if(tile == tiles.end()) {
+            if(pred(*i)) {
+              Tile* t =  findTilesDFS(*i, pred);
+              tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
+            }
+          } else {
+            tileData->adjacentTiles[tileData->adjacentTileSize++] = &tile->second;
+          }
+        }
 
-        for(auto i = adjTileInds.begin(); i != adjTileInds.end(); i++) {
-          if(tiles.find(*i) == tiles.end() && pred(*i)) {
-            tileData->adjacentTiles[tileData->adjTileSize++] = findTilesDFS(*i, pred);
+        // Insert adjacent vertices for tile into vertex map
+        {
+          size_t numVerticesInserted = 0;
+          for(auto i = adjacentVertIds.begin(); i != adjacentVertIds.end(); i++) {
+            auto vAdjacentVertices = this->adjacentVerticesForVertex(*i);
+
+            bool v1New = verts.find(*i) == verts.end();
+            Vertex* v1 = &verts[*i];
+            v1->id = *i;
+
+            for(auto j = vAdjacentVertices.begin(); j != vAdjacentVertices.end(); j++) {
+              bool v2New = verts.find(*j) == verts.end();
+
+              if((v1New && !v2New) || (!v1New && v2New)) {
+                Vertex* v2 = &verts[*j];
+                v2->id = *j;
+
+                v1->adjacentVertices[v1->adjacentVertsSize++] = v2;
+                v2->adjacentVertices[v2->adjacentVertsSize++] = v1;
+              }
+            }
+
+            tileData->adjacentVertices[numVerticesInserted++] = v1;
+            v1->adjacentTiles[v1->adjacentTileSize++] = tileData;
           }
         }
 

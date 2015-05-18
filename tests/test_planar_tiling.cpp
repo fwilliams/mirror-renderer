@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(test_trivial_tri) {
 BOOST_AUTO_TEST_CASE(test_trivial_hex) {
   HexPlanarTileSet testTileset;
   auto derp = [](const glm::ivec2& v) { return v == glm::ivec2(0, 0); };
-  HexPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), derp);
+  testTileset.addTilesInNeighborhood(ivec2(0), derp);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 6);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 6);
