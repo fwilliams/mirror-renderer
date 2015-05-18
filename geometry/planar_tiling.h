@@ -50,18 +50,6 @@ namespace geometry {
     };
 
     template<PlanarTileType T>
-    constexpr unsigned numAdjacentTiles();
-
-    template<>
-    constexpr unsigned numAdjacentTiles<PlanarTileType::TRI>() { return 3; }
-
-    template<>
-    constexpr unsigned numAdjacentTiles<PlanarTileType::QUAD>() { return 4; }
-
-    template<>
-    constexpr unsigned numAdjacentTiles<PlanarTileType::HEX>() { return 6; }
-
-    template<PlanarTileType T>
     constexpr unsigned vertsPerTile();
 
     template<>
@@ -73,13 +61,27 @@ namespace geometry {
     template<>
     constexpr unsigned vertsPerTile<PlanarTileType::HEX>() { return 6; }
 
+
+    template<PlanarTileType T>
+    constexpr unsigned tilesPerVertex();
+
+    template<>
+    constexpr unsigned tilesPerVertex<PlanarTileType::TRI>() { return 6; }
+
+    template<>
+    constexpr unsigned tilesPerVertex<PlanarTileType::QUAD>() { return 4; }
+
+    template<>
+    constexpr unsigned tilesPerVertex<PlanarTileType::HEX>() { return 3; }
+
     template <PlanarTileType TYPE>
     struct TileTopologyPolicy {
       std::array<glm::ivec2, vertsPerTile<TYPE>()>verticesForTile(const glm::ivec2& tile);
-      std::array<glm::ivec2, numAdjacentTiles<TYPE>()> adjacentTiles(const glm::ivec2& tile);
+      std::array<glm::ivec2, vertsPerTile<TYPE>()> tAdjacentTiles(const glm::ivec2& tile);
+      std::array<glm::ivec2, tilesPerVertex<TYPE>()> vAdjacentTiles(const glm::ivec2& vertex);
 
       static size_t const VERTEX_COUNT = vertsPerTile<TYPE>();
-      static size_t const ADJ_FACE_COUNT = numAdjacentTiles<TYPE>();
+      static size_t const ADJ_FACE_COUNT = vertsPerTile<TYPE>();
     };
 
     template<>
@@ -90,8 +92,14 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTiles(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::QUAD>::tAdjacentTiles(const glm::ivec2 &tile) {
       return {right(tile), up(tile), left(tile), down(tile)};
+    }
+
+    template<>
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
+    TileTopologyPolicy<PlanarTileType::QUAD>::vAdjacentTiles(const glm::ivec2 &v) {
+      return {v, left(v), downleft(v), down(v) };
     }
 
     template<>
@@ -108,12 +116,18 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::adjacentTiles(const glm::ivec2 &tile) {
+    TileTopologyPolicy<PlanarTileType::TRI>::tAdjacentTiles(const glm::ivec2 &tile) {
       if (tile.y % 2 == 0) {
         return {down(tile), upright(tile), up(tile)};
       } else {
         return {down(tile), up(tile), downleft(tile)};
       }
+    }
+
+    template<>
+    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
+    TileTopologyPolicy<PlanarTileType::TRI>::vAdjacentTiles(const glm::ivec2& v) {
+      return { v, up(v), left(v), downleft(v), down(downleft(v)), down(v) };
     }
 
     template<>
@@ -126,49 +140,66 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::adjacentTiles(const glm::ivec2 &tile) {
-      return { down(tile), downright(tile), right(tile), up(tile), upleft(tile), left(tile) };
+    TileTopologyPolicy<PlanarTileType::HEX>::tAdjacentTiles(const glm::ivec2 &v) {
+      return {};
     }
 
     template<class TYPE, class TOPOLOGY>
     class PlanarTileMap : private TOPOLOGY {
     public:
       struct Tile {
+        glm::ivec2 key;
+        size_t adjTileSize = 0;
+
+        size_t numAdjacentTiles() const {
+          return adjTileSize;
+        }
+
+        glm::ivec2 tileId() const {
+          return key;
+        }
+
         std::array<glm::ivec2, TOPOLOGY::VERTEX_COUNT> vertices;
-        std::array<glm::ivec2, TOPOLOGY::ADJ_FACE_COUNT> adjacentTiles;
+        std::array<const Tile*, TOPOLOGY::ADJ_FACE_COUNT> adjacentTiles;
         typedef typename decltype(vertices)::iterator vertexiterator;
         typedef typename decltype(vertices)::iterator tileiterator;
 
         vertexiterator vertices_begin() const { return vertices.begin(); }
         tileiterator tiles_begin() const { return tiles.begin(); }
         vertexiterator vertices_end() const { return vertices.end(); }
-        tileiterator tiles_end() const { return tiles.end(); }
+        tileiterator tiles_end() const { return tiles.begin() + adjTileSize; }
 
         TYPE data;
       };
+
     private:
       std::unordered_map<glm::ivec2, Tile> tiles;
       std::unordered_set<glm::ivec2> verts;
 
-      void findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2 &)> &pred) {
-        auto tileData = tiles[tile];
-        tileData.vertices = this->verticesForTile(tile);
-        tileData.adjacentTiles = this->adjacentTiles(tile);
-        verts.insert(tileData.vertices.begin(), tileData.vertices.end());
+      Tile* findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2 &)> &pred) {
+        auto tileData = &tiles[tile];
+        tileData->vertices = this->verticesForTile(tile);
 
-        for(auto i = tileData.adjacentTiles.begin(); i != tileData.adjacentTiles.end(); i++) {
+        auto adjTileInds = this->tAdjacentTiles(tile);
+
+        verts.insert(tileData->vertices.begin(), tileData->vertices.end());
+
+        for(auto i = adjTileInds.begin(); i != adjTileInds.end(); i++) {
           if(tiles.find(*i) == tiles.end() && pred(*i)) {
-            findTilesDFS(*i, pred);
+            tileData->adjacentTiles[tileData->adjTileSize++] = findTilesDFS(*i, pred);
           }
         }
+
+        return tileData;
       }
 
     public:
 
-      void addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2 &)> &pred) {
+      Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2 &)> &pred) {
         if (tiles.find(point) == tiles.end() && pred(point)) {
-          findTilesDFS(point, pred);
+          return findTilesDFS(point, pred);
         }
+        return nullptr;
       }
 
       size_t edgeCount() const {

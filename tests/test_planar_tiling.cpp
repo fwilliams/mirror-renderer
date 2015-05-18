@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(test_trivial_tri) {
 BOOST_AUTO_TEST_CASE(test_trivial_hex) {
   HexPlanarTileSet testTileset;
   auto derp = [](const glm::ivec2& v) { return v == glm::ivec2(0, 0); };
-  testTileset.addTilesInNeighborhood(ivec2(0), derp);
+  HexPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), derp);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 6);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 6);
@@ -60,15 +60,18 @@ BOOST_AUTO_TEST_CASE(test_trivial_hex) {
 
 BOOST_AUTO_TEST_CASE(test_grid_of_quad_tiles) {
   QuadPlanarTileSet testTileset;
-  testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
+  QuadPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
+//  BOOST_CHECK_EQUAL(t->tileId(), glm::ivec2(0));
+//  BOOST_CHECK_EQUAL(t->numAdjacentTiles(), 4);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 24);
+
 }
 
 BOOST_AUTO_TEST_CASE(test_grid_of_tri_tiles) {
   TriPlanarTileSet testTileset;
-  testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
+  TriPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 11);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 19);
