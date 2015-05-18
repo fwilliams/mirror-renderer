@@ -61,8 +61,8 @@ BOOST_AUTO_TEST_CASE(test_trivial_hex) {
 BOOST_AUTO_TEST_CASE(test_grid_of_quad_tiles) {
   QuadPlanarTileSet testTileset;
   QuadPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
-//  BOOST_CHECK_EQUAL(t->tileId(), glm::ivec2(0));
-//  BOOST_CHECK_EQUAL(t->numAdjacentTiles(), 4);
+  BOOST_CHECK(t->tileId() == glm::ivec2(0));
+  BOOST_CHECK_EQUAL(t->numAdjacentTiles(), 2);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 16);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 24);
@@ -72,6 +72,8 @@ BOOST_AUTO_TEST_CASE(test_grid_of_quad_tiles) {
 BOOST_AUTO_TEST_CASE(test_grid_of_tri_tiles) {
   TriPlanarTileSet testTileset;
   TriPlanarTileSet::Tile* t = testTileset.addTilesInNeighborhood(ivec2(0), isInGrid);
+  BOOST_CHECK(t->tileId() == glm::ivec2(0));
+  BOOST_CHECK_EQUAL(t->numAdjacentTiles(), 2);
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 9);
   BOOST_CHECK_EQUAL(testTileset.vertexCount(), 11);
   BOOST_CHECK_EQUAL(testTileset.edgeCount(), 19);

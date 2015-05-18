@@ -9,29 +9,21 @@
 #include "renderer/renderer.h"
 #include "renderer/camera.h"
 
+#include "geometry/planar_tiling.h"
+
 using namespace std;
 using namespace glm;
-
-//template <typename... Attribs>
-//Geometry generateTileGeometry(PlanarTileSet<PlanarTileType::QUAD>& tiles) {
-//  const size_t numVertices = 0;
-//  const size_t numIndices = numVertices;
-//  Geometry ret = Geometry::fromVertexAttribs<vec4, Attribs...>(numVertices, numIndices);
-//
-//  typedef tuple<vec4, Attribs...> vertex;
-//
-//  glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
-//  vertex* verts = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
-//
-//  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
-//  GLuint* inds = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
-//
-//  return ret;
-//}
+using namespace geometry;
 
 class ProjectedTileVizWindow: public SDLGLWindow {
   const unsigned NUM_COORDS_W = 55;
   const unsigned NUM_COORDS_H = 55;
+
+  QuadPlanarTileMapV<GLuint> quadTileMap;
+  Geometry quadTileMapGeometry;
+
+  TriPlanarTileMapV<GLuint> triTileMap;
+  Geometry triTileMapGeometry;
 
   Renderer* rndr = nullptr;
 

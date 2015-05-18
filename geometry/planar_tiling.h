@@ -160,7 +160,7 @@ namespace geometry {
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
     TileTopologyPolicy<PlanarTileType::HEX>::adjacentTilesForTile(const glm::ivec2 &v) const {
-      return {};
+      return {right(v), up(v), upleft(v), left(v), down(v), downright(v)};
     }
 
     template<>
@@ -171,7 +171,7 @@ namespace geometry {
 
 
 
-    template<class TYPE, class TOPOLOGY>
+    template<class T_TYPE, class V_TYPE, class TOPOLOGY>
     class PlanarTileMap : private TOPOLOGY {
     public:
       struct Vertex;
@@ -193,7 +193,7 @@ namespace geometry {
         std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> adjacentVertices;
 
         typedef typename decltype(adjacentVertices)::iterator vertexiterator;
-        typedef typename decltype(adjacentVertices)::iterator tileiterator;
+        typedef typename decltype(adjacentTiles)::iterator tileiterator;
 
         tileiterator tiles_begin() const { return adjacentTiles.begin(); }
         tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
@@ -201,20 +201,15 @@ namespace geometry {
         vertexiterator vertices_begin() const { return adjacentVertices.begin(); }
         vertexiterator vertices_end() const { return adjacentVertices.end(); }
 
-        TYPE data;
+        T_TYPE data;
       };
 
       struct Vertex {
         glm::ivec2 id;
         size_t adjacentTileSize = 0;
-        size_t adjacentVertsSize = 0;
 
         size_t numAdjacentTiles() const {
           return adjacentTileSize;
-        }
-
-        size_t numAdjacentVertices() const {
-          return adjacentVertsSize;
         }
 
         glm::ivec2 vertexId() const {
@@ -222,16 +217,13 @@ namespace geometry {
         }
 
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_VERT> adjacentTiles;
-        std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_VERT> adjacentVertices;
 
-        typedef typename decltype(adjacentVertices)::iterator vertexiterator;
-        typedef typename decltype(adjacentVertices)::iterator tileiterator;
-
-        vertexiterator vertices_begin() const { return adjacentVertices.begin(); }
-        vertexiterator vertices_end() const { return adjacentVertices.begin() + adjacentVertsSize; }
+        typedef typename decltype(adjacentTiles)::iterator tileiterator;
 
         tileiterator tiles_begin() const { return adjacentTiles.begin(); }
         tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
+
+        V_TYPE data;
       };
 
     private:
@@ -263,23 +255,8 @@ namespace geometry {
         {
           size_t numVerticesInserted = 0;
           for(auto i = adjacentVertIds.begin(); i != adjacentVertIds.end(); i++) {
-            auto vAdjacentVertices = this->adjacentVerticesForVertex(*i);
-
-            bool v1New = verts.find(*i) == verts.end();
             Vertex* v1 = &verts[*i];
             v1->id = *i;
-
-            for(auto j = vAdjacentVertices.begin(); j != vAdjacentVertices.end(); j++) {
-              bool v2New = verts.find(*j) == verts.end();
-
-              if((v1New && !v2New) || (!v1New && v2New)) {
-                Vertex* v2 = &verts[*j];
-                v2->id = *j;
-
-                v1->adjacentVertices[v1->adjacentVertsSize++] = v2;
-                v2->adjacentVertices[v2->adjacentVertsSize++] = v1;
-              }
-            }
 
             tileData->adjacentVertices[numVerticesInserted++] = v1;
             v1->adjacentTiles[v1->adjacentTileSize++] = tileData;
@@ -290,6 +267,24 @@ namespace geometry {
       }
 
     public:
+      typedef typename decltype(tiles)::iterator tile_iterator;
+      typedef typename decltype(verts)::iterator vertex_iterator;
+
+      tile_iterator tiles_begin() const {
+        return tiles.begin();
+      }
+
+      tile_iterator tiles_end() const {
+        return tiles.end();
+      }
+
+      vertex_iterator vertices_begin() const {
+        return verts.begin();
+      }
+
+      vertex_iterator vertices_end() const {
+        return verts.end();
+      }
 
       Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2 &)> &pred) {
         if (tiles.find(point) == tiles.end() && pred(point)) {
@@ -314,21 +309,41 @@ namespace geometry {
     struct EmptyStruct {};
 
     template <PlanarTileType T>
-    using PlanarTileSet = PlanarTileMap<EmptyStruct, TileTopologyPolicy<T>>;
+    using PlanarTileSet = PlanarTileMap<EmptyStruct, EmptyStruct, TileTopologyPolicy<T>>;
   }
 
   using QuadPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::QUAD>;
   using TriPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::TRI>;
   using HexPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::HEX>;
 
-  template <typename T>
-  using QuadPlanarTileMap = detail::PlanarTileMap<T, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+  template <typename VT>
+  using QuadPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
 
-  template <typename T>
-  using TriPlanarTileMap = detail::PlanarTileMap<T, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+  template <typename VT>
+  using TriPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
 
-  template <typename T>
-  using HexPlanarTileMap = detail::PlanarTileMap<T, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+  template <typename VT>
+  using HexPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+
+
+  template <typename TT>
+  using QuadPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+
+  template <typename TT>
+  using TriPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+
+  template <typename TT>
+  using HexPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+
+
+  template <typename TT, typename VT>
+  using QuadPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+
+  template <typename TT, typename VT>
+  using TriPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+
+  template <typename TT, typename VT>
+  using HexPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
 }
 
 #endif /* GEOMETRY_PLANAR_TILING_H_ */
