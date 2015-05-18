@@ -90,25 +90,25 @@ namespace geometry {
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
     TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
-      return {tile, right(tile), upright(tile), up(tile)};
+      return {{ tile, right(tile), upright(tile), up(tile) }};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
     TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForTile(const glm::ivec2 &tile) const {
-      return {right(tile), up(tile), left(tile), down(tile)};
+      return {{ right(tile), up(tile), left(tile), down(tile) }};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
     TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForVertex(const glm::ivec2 &v) const {
-      return {v, left(v), downleft(v), down(v) };
+      return {{ v, left(v), downleft(v), down(v) }};
     }
 
     template<>
     std::array<glm::ivec2, tilesPerVertex<PlanarTileType::QUAD>()>
     TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForVertex(const glm::ivec2& v) const {
-      return {up(v), right(v), down(v), left(v)};
+      return {{ up(v), right(v), down(v), left(v) }};
     }
 
 
@@ -118,10 +118,10 @@ namespace geometry {
     TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
       if (tile.y % 2 == 0) {
         glm::ivec2 t(tile.x, tile.y / 2);
-        return {t, right(t), upright(t)};
+        return {{ t, right(t), upright(t) }};
       } else {
         glm::ivec2 t(tile.x, tile.y / 2 + 1);
-        return {t, down(t), right(t)};
+        return {{ t, down(t), right(t) }};
       }
     }
 
@@ -129,22 +129,22 @@ namespace geometry {
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
     TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForTile(const glm::ivec2 &tile) const {
       if (tile.y % 2 == 0) {
-        return {down(tile), upright(tile), up(tile)};
+        return {{ down(tile), upright(tile), up(tile) }};
       } else {
-        return {down(tile), up(tile), downleft(tile)};
+        return {{ down(tile), up(tile), downleft(tile) }};
       }
     }
 
     template<>
     std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
     TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForVertex(const glm::ivec2& v) const {
-      return { v, up(v), left(v), downleft(v), down(downleft(v)), down(v) };
+      return {{ v, up(v), left(v), downleft(v), down(downleft(v)), down(v) }};
     }
 
     template<>
     std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
     TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForVertex(const glm::ivec2& v) const {
-      return {up(v), upright(v), right(v), down(v), downleft(v), left(v)};
+      return {{ up(v), upright(v), right(v), down(v), downleft(v), left(v) }};
     }
 
 
@@ -153,14 +153,14 @@ namespace geometry {
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
     TileTopologyPolicy<PlanarTileType::HEX>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
       glm::ivec2 t(2*tile.x+tile.y, tile.x + 2*tile.y);
-      return { t, right(t), glm::ivec2(t.x+2, t.y+1),
-               glm::ivec2(t.x+2, t.y+2), glm::ivec2(t.x+1, t.y+2), up(t) };
+      return {{ t, right(t), glm::ivec2(t.x+2, t.y+1),
+               glm::ivec2(t.x+2, t.y+2), glm::ivec2(t.x+1, t.y+2), up(t) }};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
     TileTopologyPolicy<PlanarTileType::HEX>::adjacentTilesForTile(const glm::ivec2 &v) const {
-      return {right(v), up(v), upleft(v), left(v), down(v), downright(v)};
+      return { {right(v), up(v), upleft(v), left(v), down(v), downright(v) }};
     }
 
     template<>
@@ -192,14 +192,21 @@ namespace geometry {
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_TILE> adjacentTiles;
         std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> adjacentVertices;
 
-        typedef typename decltype(adjacentVertices)::iterator vertexiterator;
-        typedef typename decltype(adjacentTiles)::iterator tileiterator;
+        typedef typename decltype(adjacentVertices)::iterator vertex_iterator;
+        typedef typename decltype(adjacentVertices)::const_iterator const_vertex_iterator;
 
-        tileiterator tiles_begin() const { return adjacentTiles.begin(); }
-        tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
+        typedef typename decltype(adjacentTiles)::iterator tile_iterator;
+        typedef typename decltype(adjacentTiles)::const_iterator const_tile_iterator;
 
-        vertexiterator vertices_begin() const { return adjacentVertices.begin(); }
-        vertexiterator vertices_end() const { return adjacentVertices.end(); }
+        tile_iterator tiles_begin() { return adjacentTiles.begin(); }
+        tile_iterator tiles_end() { return adjacentTiles.begin() + adjacentTileSize; }
+        const_tile_iterator tiles_begin() const noexcept { return adjacentTiles.begin(); }
+        const_tile_iterator tiles_end() const noexcept { return adjacentTiles.begin() + adjacentTileSize; }
+
+        vertex_iterator vertices_begin() { return adjacentVertices.begin(); }
+        vertex_iterator vertices_end() { return adjacentVertices.end(); }
+        const_vertex_iterator vertices_begin() const noexcept { return adjacentVertices.begin(); }
+        const_vertex_iterator vertices_end() const noexcept { return adjacentVertices.end(); }
 
         T_TYPE data;
       };
@@ -218,10 +225,13 @@ namespace geometry {
 
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_VERT> adjacentTiles;
 
-        typedef typename decltype(adjacentTiles)::iterator tileiterator;
+        typedef typename decltype(adjacentTiles)::iterator tile_iterator;
+        typedef typename decltype(adjacentTiles)::const_iterator const_tile_iterator;
 
-        tileiterator tiles_begin() const { return adjacentTiles.begin(); }
-        tileiterator tiles_end() const { return adjacentTiles.begin() + adjacentTileSize; }
+        tile_iterator tiles_begin() { return adjacentTiles.begin(); }
+        tile_iterator tiles_end() { return adjacentTiles.begin() + adjacentTileSize; }
+        const_tile_iterator tiles_begin() const noexcept { return adjacentTiles.begin(); }
+        const_tile_iterator tiles_end() const noexcept { return adjacentTiles.begin() + adjacentTileSize; }
 
         V_TYPE data;
       };
@@ -270,21 +280,20 @@ namespace geometry {
       typedef typename decltype(tiles)::iterator tile_iterator;
       typedef typename decltype(verts)::iterator vertex_iterator;
 
-      tile_iterator tiles_begin() const {
-        return tiles.begin();
-      }
+      typedef typename decltype(tiles)::const_iterator const_tile_iterator;
+      typedef typename decltype(verts)::const_iterator const_vertex_iterator;
 
-      tile_iterator tiles_end() const {
-        return tiles.end();
-      }
+      tile_iterator tiles_begin() { return tiles.begin(); }
+      tile_iterator tiles_end() { return tiles.end(); }
+      const_tile_iterator tiles_begin() const noexcept { return tiles.begin(); }
+      const_tile_iterator tiles_end() const noexcept { return tiles.end(); }
 
-      vertex_iterator vertices_begin() const {
-        return verts.begin();
-      }
+      vertex_iterator vertices_begin() { return verts.begin(); }
+      vertex_iterator vertices_end() { return verts.end(); }
+      const_vertex_iterator vertices_begin() const noexcept { return verts.begin(); }
+      const_vertex_iterator vertices_end() const noexcept { return verts.end(); }
 
-      vertex_iterator vertices_end() const {
-        return verts.end();
-      }
+      size_t numVertsPerTile() const { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
 
       Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2 &)> &pred) {
         if (tiles.find(point) == tiles.end() && pred(point)) {

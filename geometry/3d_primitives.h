@@ -134,7 +134,7 @@ public:
     const float normalScale = invertNormals ? -1.0 : 1.0;
     const glm::vec4 v4scale(scale, 1.0);
 
-    const std::array<glm::vec4, 8> verts {
+    const std::array<glm::vec4, 8> verts {{
       glm::vec4(-0.5, -0.5,  0.5, 1.0),
       glm::vec4( 0.5, -0.5,  0.5, 1.0),
       glm::vec4( 0.5,  0.5,  0.5, 1.0),
@@ -143,9 +143,9 @@ public:
       glm::vec4( 0.5, -0.5, -0.5, 1.0),
       glm::vec4( 0.5,  0.5, -0.5, 1.0),
       glm::vec4(-0.5,  0.5, -0.5, 1.0)
-    };
+    }};
 
-    const std::array<glm::vec3, 8> norms {
+    const std::array<glm::vec3, 8> norms {{
       glm::vec3(-0.577350, -0.577350,  0.577350),
       glm::vec3( 0.577350, -0.577350,  0.577350),
       glm::vec3( 0.577350,  0.577350,  0.577350),
@@ -154,16 +154,16 @@ public:
       glm::vec3( 0.577350, -0.577350, -0.577350),
       glm::vec3( 0.577350,  0.577350, -0.577350),
       glm::vec3(-0.577350,  0.577350, -0.577350),
-    };
+    }};
 
-    const std::array<GLuint, 36> inds {
+    const std::array<GLuint, 36> inds {{
       0, 1, 2, 2, 3, 0,
       3, 2, 6, 6, 7, 3,
       7, 6, 5, 5, 4, 7,
       4, 0, 3, 3, 7, 4,
       1, 0, 5, 4, 5, 0,
       1, 5, 6, 6, 2, 1
-    };
+    }};
 
     for(size_t i = 0; i < verts.size(); i++) {
       vertices[i].position = v4scale * verts[i];

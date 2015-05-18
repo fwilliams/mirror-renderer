@@ -1,5 +1,6 @@
 #include <iostream>
 #include <tuple>
+#include <functional>
 
 #include <glm/glm.hpp>
 
@@ -16,14 +17,9 @@ using namespace glm;
 using namespace geometry;
 
 class ProjectedTileVizWindow: public SDLGLWindow {
-  const unsigned NUM_COORDS_W = 55;
-  const unsigned NUM_COORDS_H = 55;
-
-  QuadPlanarTileMapV<GLuint> quadTileMap;
-  Geometry quadTileMapGeometry;
+  QuadPlanarTileMapV<GLuint> quadTileSet;
 
   TriPlanarTileMapV<GLuint> triTileMap;
-  Geometry triTileMapGeometry;
 
   Renderer* rndr = nullptr;
 
@@ -38,9 +34,21 @@ class ProjectedTileVizWindow: public SDLGLWindow {
 public:
   ProjectedTileVizWindow(unsigned w, unsigned h) : SDLGLWindow(w, h) {}
 
-  Geometry makeGrid() {
-    size_t numVertices = NUM_COORDS_W * NUM_COORDS_H * 2;
-    size_t numIndices = (NUM_COORDS_W-1) * (NUM_COORDS_H - 1) * 10 + (NUM_COORDS_W-1) * 6 + (NUM_COORDS_H - 1)*6;
+  template <typename Tiling>
+  Geometry makeGrid(Tiling& tiling) {
+    auto nearestN = [] (const ivec2& v) {
+      vec2 pos = vec2(v) * vec2(1.0, 0.5);
+      pos = vec2(pos.x + pos.y * -0.5, pos.y * sqrt(3.0));
+      return distance(pos, vec2(0)) <= 10;
+    };
+
+    using namespace std::placeholders;
+
+    tiling.addTilesInNeighborhood(ivec2(0), nearestN);
+
+    size_t numVertices = tiling.vertexCount();
+    size_t numIndices = tiling.tileCount() * tiling.numVertsPerTile() * 2;
+
     Geometry ret = Geometry::fromVertexAttribs<vec4, vec4>(numVertices, numIndices);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
@@ -48,62 +56,31 @@ public:
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
     GLuint* inds = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
-    check_gl_error();
 
-    for(size_t i = 0; i < NUM_COORDS_W; i++) {
-      for(size_t j = 0; j < NUM_COORDS_H * 2; j += 2) {
-        vec4 pos(-static_cast<float>(NUM_COORDS_W)/2.0 + i, -0.5,
-                 -static_cast<float>(NUM_COORDS_H)/2.0 + static_cast<float>(j)/2.0, 1.0);
-        vec4 color(static_cast<float>(i) / NUM_COORDS_W, static_cast<float>(j/2) / NUM_COORDS_H, 0.0, 1.0);
-        const size_t offset = i * NUM_COORDS_W * 2 + j;
-        verts[offset] = make_tuple(color, pos);
+    size_t vOffset = 0, iOffset = 0;
+    for(auto i = tiling.vertices_begin(); i != tiling.vertices_end(); i++) {
+      i->second.data = vOffset;
+      vec2 eiInt = i->first;
+      vec2 pos(eiInt.x + eiInt.y * -0.5, eiInt.y * sqrt(3.0));
 
-        pos.y = 0.5;
-        verts[offset + 1] = make_tuple(color, pos);
+      if(eiInt == vec2(0) || eiInt == vec2(1, 0) || eiInt == vec2(1, 1)) {
+        verts[vOffset++] = make_tuple(vec4(0.0, 0.0, 1.0, 1.0), vec4(pos, 0.0, 1.0));
+      } else {
+        verts[vOffset++] = make_tuple(vec4(1.0), vec4(pos, 0.0, 1.0));
       }
     }
 
-    size_t w = 0;
-    for(size_t i = 0; i < NUM_COORDS_W - 1; i++) {
-      for(size_t j = 0; j < NUM_COORDS_H - 1; j++) {
-        const GLuint offset = i * NUM_COORDS_W * 2 + j * 2;
-        inds[w++] = offset;
-        inds[w++] = offset + 1;
-
-        inds[w++] = offset;
-        inds[w++] = offset + 2;
-
-        inds[w++] = offset;
-        inds[w++] = offset + NUM_COORDS_W*2;
-
-        inds[w++] = offset + 1;
-        inds[w++] = offset + 3;
-
-        inds[w++] = offset + 1;
-        inds[w++] = offset + 1 + NUM_COORDS_W*2;
+    for(auto i = tiling.tiles_begin(); i != tiling.tiles_end(); i++) {
+      for(auto v = i->second.vertices_begin(); v != i->second.vertices_end(); v++) {
+        if(v == i->second.vertices_end() - 1) {
+          inds[iOffset++] = (*v)->data;
+          inds[iOffset++] = (*(i->second.vertices_begin()))->data;
+        } else {
+          inds[iOffset++] = (*v)->data;
+          inds[iOffset++] = (*(v+1))->data;
+        }
       }
     }
-    for(size_t i = 0; i < NUM_COORDS_W-1; i++) {
-      const GLuint offset = NUM_COORDS_W * 2 * (NUM_COORDS_H-1) + i * 2;
-      inds[w++] = offset;
-      inds[w++] = offset + 1;
-      inds[w++] = offset;
-      inds[w++] = offset + 2;
-      inds[w++] = offset + 1;
-      inds[w++] = offset + 3;
-    }
-
-    for(size_t i = 0; i < NUM_COORDS_H-1; i++) {
-      const GLuint offset = (i+1) * NUM_COORDS_W * 2 - 2;
-      inds[w++] = offset;
-      inds[w++] = offset + 1;
-      inds[w++] = offset;
-      inds[w++] = offset + NUM_COORDS_W * 2;
-      inds[w++] = offset + 1;
-      inds[w++] = offset + NUM_COORDS_W * 2 + 1;
-    }
-    inds[w++] = NUM_COORDS_W * NUM_COORDS_H * 2 - 2;
-    inds[w++] = NUM_COORDS_W * NUM_COORDS_H * 2 - 1;
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -155,14 +132,14 @@ public:
     rndr = new Renderer();
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
 
-    camera.setPosition(vec3(0.0, 0.0, 0.0));
+    camera.setPosition(vec3(0.0, 0.0, -20.0));
     camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 10000.0);
-    camera.setCameraVelocity(vec2(0.9));
+    camera.setCameraVelocity(vec2(0.5));
 
     program = GLProgramBuilder::buildFromFiles("shaders/flat_color_vert.glsl",
                                                "shaders/flat_color_frag.glsl");
 
-    grid = makeGrid();
+    grid = makeGrid(triTileMap);
 
     setMousePosition(w.width()/2, w.height()/2);
     showCursor(false);
@@ -174,11 +151,11 @@ public:
     glPointSize(3.0);
     glLineWidth(1.0);
     rndr->setProgram(program);
-    rndr->draw(grid, scale(mat4(1.0), vec3(100.0)), Renderer::PrimitiveType::LINES);
+    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), Renderer::PrimitiveType::LINES);
   }
 };
 
 int main(int argc, char** argv) {
-  ProjectedTileVizWindow w(1024, 1024);
+  ProjectedTileVizWindow w(1024, 768);
   w.mainLoop();
 }

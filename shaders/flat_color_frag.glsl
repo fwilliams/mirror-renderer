@@ -1,6 +1,6 @@
 #version 430
 
-in vec4 vColor;
+flat in vec4 vColor;
 
 out vec4 fragcolor;
 
