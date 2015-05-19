@@ -171,8 +171,22 @@ namespace geometry {
 
 
 
-    template<class T_TYPE, class V_TYPE, class TOPOLOGY>
-    class PlanarTileMap : private TOPOLOGY {
+    struct GaussianCoords {
+      static glm::vec2 coords(glm::ivec2 tileCoords) {
+        return glm::vec2(tileCoords);
+      }
+    };
+
+    struct EulerIntCoords {
+      static glm::vec2 coords(glm::ivec2 tileCoords) {
+        return glm::vec2(tileCoords.x + tileCoords.y * -0.5, tileCoords.y * sqrt(3.0));
+      }
+    };
+
+
+
+    template<class T_TYPE, class V_TYPE, class TOPOLOGY, class COORDS = GaussianCoords>
+    class PlanarTileMap : private TOPOLOGY, COORDS {
     public:
       struct Vertex;
       struct Tile;
@@ -187,6 +201,10 @@ namespace geometry {
 
         glm::ivec2 tileId() const {
           return id;
+        }
+
+        glm::vec2 coords2d() {
+          return COORDS::coords(id);
         }
 
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_TILE> adjacentTiles;
@@ -223,6 +241,10 @@ namespace geometry {
           return id;
         }
 
+        glm::vec2 coords2d() {
+          return COORDS::coords(id);
+        }
+
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_VERT> adjacentTiles;
 
         typedef typename decltype(adjacentTiles)::iterator tile_iterator;
@@ -240,7 +262,7 @@ namespace geometry {
       std::unordered_map<glm::ivec2, Tile> tiles;
       std::unordered_map<glm::ivec2, Vertex> verts;
 
-      Tile* findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2 &)> &pred) {
+      Tile* findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2&)> &pred) {
         // Insert the new tile into the tile map
         auto tileData = &tiles[tile];
         tileData->id = tile;
@@ -277,6 +299,10 @@ namespace geometry {
       }
 
     public:
+      static glm::vec2 coords2d(const glm::ivec2& v) {
+        return COORDS::coords(v);
+      }
+
       typedef typename decltype(tiles)::iterator tile_iterator;
       typedef typename decltype(verts)::iterator vertex_iterator;
 
@@ -295,7 +321,7 @@ namespace geometry {
 
       size_t numVertsPerTile() const { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
 
-      Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2 &)> &pred) {
+      Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2&)> &pred) {
         if (tiles.find(point) == tiles.end() && pred(point)) {
           return findTilesDFS(point, pred);
         }
@@ -329,30 +355,30 @@ namespace geometry {
   using QuadPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
 
   template <typename VT>
-  using TriPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+  using TriPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename VT>
-  using HexPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+  using HexPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 
 
   template <typename TT>
   using QuadPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
 
   template <typename TT>
-  using TriPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+  using TriPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename TT>
-  using HexPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+  using HexPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 
 
   template <typename TT, typename VT>
   using QuadPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
 
   template <typename TT, typename VT>
-  using TriPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>>;
+  using TriPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename TT, typename VT>
-  using HexPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>>;
+  using HexPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 }
 
 #endif /* GEOMETRY_PLANAR_TILING_H_ */

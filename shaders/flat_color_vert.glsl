@@ -5,7 +5,7 @@
 layout(location=0) in vec4 position;
 layout(location=1) in vec4 color;
 
-flat out vec4 vColor;
+smooth out vec4 vColor;
 
 void main() {
 	gl_Position = std_Projection * std_Modelview * position;

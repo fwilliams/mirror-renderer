@@ -17,9 +17,7 @@ using namespace glm;
 using namespace geometry;
 
 class ProjectedTileVizWindow: public SDLGLWindow {
-  QuadPlanarTileMapV<GLuint> quadTileSet;
-
-  TriPlanarTileMapV<GLuint> triTileMap;
+  TriPlanarTileMapV<GLuint> tileMap;
 
   Renderer* rndr = nullptr;
 
@@ -36,10 +34,8 @@ public:
 
   template <typename Tiling>
   Geometry makeGrid(Tiling& tiling) {
-    auto nearestN = [] (const ivec2& v) {
-      vec2 pos = vec2(v) * vec2(1.0, 0.5);
-      pos = vec2(pos.x + pos.y * -0.5, pos.y * sqrt(3.0));
-      return distance(pos, vec2(0)) <= 10;
+    auto nearestN = [] (const glm::ivec2& tile) {
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 100;
     };
 
     using namespace std::placeholders;
@@ -60,14 +56,8 @@ public:
     size_t vOffset = 0, iOffset = 0;
     for(auto i = tiling.vertices_begin(); i != tiling.vertices_end(); i++) {
       i->second.data = vOffset;
-      vec2 eiInt = i->first;
-      vec2 pos(eiInt.x + eiInt.y * -0.5, eiInt.y * sqrt(3.0));
-
-      if(eiInt == vec2(0) || eiInt == vec2(1, 0) || eiInt == vec2(1, 1)) {
-        verts[vOffset++] = make_tuple(vec4(0.0, 0.0, 1.0, 1.0), vec4(pos, 0.0, 1.0));
-      } else {
-        verts[vOffset++] = make_tuple(vec4(1.0), vec4(pos, 0.0, 1.0));
-      }
+      vec2 pos = i->second.coords2d();
+      verts[vOffset++] = make_tuple(vec4(1.0), vec4(pos.x, 0.0, pos.y, 1.0));
     }
 
     for(auto i = tiling.tiles_begin(); i != tiling.tiles_end(); i++) {
@@ -89,6 +79,23 @@ public:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return ret;
+  }
+
+  void setup(SDLGLWindow& w) {
+    rndr = new Renderer();
+    rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
+
+    camera.setPosition(vec3(0.5, 0.05, 0.5));
+    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 10000.0);
+    camera.setCameraVelocity(vec2(0.05));
+
+    program = GLProgramBuilder::buildFromFiles("shaders/flat_color_vert.glsl",
+                                               "shaders/flat_color_frag.glsl");
+
+    grid = makeGrid(tileMap);
+
+    setMousePosition(w.width()/2, w.height()/2);
+    showCursor(false);
   }
 
   void handle_event(SDLGLWindow& w, const SDL_Event& event) {
@@ -125,24 +132,6 @@ public:
     camera.updatePosition();
     rndr->setProjectionMatrix(camera.getProjectionMatrix());
     rndr->setViewMatrix(camera.getViewMatrix());
-  }
-
-
-  void setup(SDLGLWindow& w) {
-    rndr = new Renderer();
-    rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
-
-    camera.setPosition(vec3(0.0, 0.0, -20.0));
-    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 10000.0);
-    camera.setCameraVelocity(vec2(0.5));
-
-    program = GLProgramBuilder::buildFromFiles("shaders/flat_color_vert.glsl",
-                                               "shaders/flat_color_frag.glsl");
-
-    grid = makeGrid(triTileMap);
-
-    setMousePosition(w.width()/2, w.height()/2);
-    showCursor(false);
   }
 
   void draw(SDLGLWindow& w) {
