@@ -179,7 +179,8 @@ namespace geometry {
 
     struct EulerIntCoords {
       static glm::vec2 coords(glm::ivec2 tileCoords) {
-        return glm::vec2(tileCoords.x + tileCoords.y * -0.5, tileCoords.y * sqrt(3.0));
+        glm::vec2 ret = glm::vec2(1.0, 1.0) * glm::vec2(tileCoords);
+        return glm::vec2(ret.x + ret.y * -0.5, ret.y * sqrt(3.0));
       }
     };
 

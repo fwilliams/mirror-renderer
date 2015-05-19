@@ -17,7 +17,7 @@ using namespace glm;
 using namespace geometry;
 
 class ProjectedTileVizWindow: public SDLGLWindow {
-  TriPlanarTileMapV<GLuint> tileMap;
+  QuadPlanarTileMapV<GLuint> tileMap;
 
   Renderer* rndr = nullptr;
 
@@ -33,9 +33,9 @@ public:
   ProjectedTileVizWindow(unsigned w, unsigned h) : SDLGLWindow(w, h) {}
 
   template <typename Tiling>
-  Geometry makeGrid(Tiling& tiling) {
+  Geometry generate2dTileGeometry(Tiling& tiling) {
     auto nearestN = [] (const glm::ivec2& tile) {
-      return distance(Tiling::coords2d(tile), vec2(0)) <= 100;
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 10;
     };
 
     using namespace std::placeholders;
@@ -81,18 +81,89 @@ public:
     return ret;
   }
 
+  template <typename Tiling>
+  Geometry generate3dTileGeometry(Tiling& tiling) {
+    auto nearestN = [] (const glm::ivec2& tile) {
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 100;
+    };
+
+    tiling.addTilesInNeighborhood(ivec2(0), nearestN);
+
+    size_t numVertices = tiling.tileCount() * tiling.numVertsPerTile() * 4;
+    size_t numIndices = tiling.tileCount() * tiling.numVertsPerTile() * (6 + (tiling.numVertsPerTile() - 2) * 3);
+
+    Geometry ret = Geometry::fromVertexAttribs<vec4, vec4>(numVertices, numIndices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    vertex* verts = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
+    GLuint* inds = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
+
+    size_t vOffset = 0, iOffset = 0;
+
+    for(auto i = tiling.tiles_begin(); i != tiling.tiles_end(); i++) {
+      size_t vBase = vOffset;
+      for(auto v = i->second.vertices_begin(); v != i->second.vertices_end(); v++) {
+        vec2 pos = (*v)->coords2d();
+        // TODO: Texture coordinates
+        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
+
+        if(v == i->second.vertices_end() - 1) {
+          // Tesselate the walls
+          inds[iOffset++] = vOffset - 4;
+          inds[iOffset++] = vOffset - 2;
+          inds[iOffset++] = vBase;
+          inds[iOffset++] = vOffset - 2;
+          inds[iOffset++] = vBase + 2;
+          inds[iOffset++] = vBase;
+        } else {
+          // Tesselate the walls
+          inds[iOffset++] = vOffset - 4;
+          inds[iOffset++] = vOffset - 2;
+          inds[iOffset++] = vOffset;
+          inds[iOffset++] = vOffset - 2;
+          inds[iOffset++] = vOffset + 2;
+          inds[iOffset++] = vOffset;
+        }
+
+        if(v >= i->second.vertices_begin() + 2 && v < i->second.vertices_end() - 1) {
+          // Tesselate the ceiling
+          inds[iOffset++] = vBase + 1;
+          inds[iOffset++] = vOffset - 3;
+          inds[iOffset++] = vOffset + 1;
+
+          inds[iOffset++] = vBase + 3;
+          inds[iOffset++] = vOffset + 3;
+          inds[iOffset++] = vOffset - 1;
+        }
+      }
+    }
+
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return ret;
+  }
+
   void setup(SDLGLWindow& w) {
     rndr = new Renderer();
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
-
-    camera.setPosition(vec3(0.5, 0.05, 0.5));
-    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.5, 10000.0);
+    rndr->enableFaceCulling();
+    camera.setPosition(vec3(0.5, 0.0, 0.5));
+    camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.1, 10000.0);
     camera.setCameraVelocity(vec2(0.05));
 
     program = GLProgramBuilder::buildFromFiles("shaders/flat_color_vert.glsl",
                                                "shaders/flat_color_frag.glsl");
 
-    grid = makeGrid(tileMap);
+    grid = generate3dTileGeometry(tileMap);
 
     setMousePosition(w.width()/2, w.height()/2);
     showCursor(false);
@@ -140,7 +211,8 @@ public:
     glPointSize(3.0);
     glLineWidth(1.0);
     rndr->setProgram(program);
-    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), Renderer::PrimitiveType::LINES);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), Renderer::PrimitiveType::TRIANGLES);
   }
 };
 
