@@ -265,7 +265,7 @@ namespace geometry {
 
       Tile* findTilesDFS(const glm::ivec2 &tile, const std::function<bool(const glm::ivec2&)> &pred) {
         // Insert the new tile into the tile map
-        auto tileData = &tiles[tile];
+        Tile* tileData = &tiles[tile];
         tileData->id = tile;
 
         auto adjacentVertIds = this->adjacentVerticesForTile(tile);
@@ -323,8 +323,9 @@ namespace geometry {
       size_t numVertsPerTile() const { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
 
       Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2&)> &pred) {
-        if (tiles.find(point) == tiles.end() && pred(point)) {
-          return findTilesDFS(point, pred);
+        if (pred(point)) {
+          Tile* ret = findTilesDFS(point, pred);
+          return ret;
         }
         return nullptr;
       }
@@ -349,7 +350,9 @@ namespace geometry {
   }
 
   using QuadPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::QUAD>;
+
   using TriPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::TRI>;
+
   using HexPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::HEX>;
 
   template <typename VT>

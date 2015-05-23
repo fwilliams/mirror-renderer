@@ -31,6 +31,7 @@ private:
   template <typename T, class... Rest>
   struct EnableArrayElem {
     static void enable(GLuint index, size_t stride, size_t offset) {
+
       EnableArrayElem<T>::enable(index, stride, offset);
       EnableArrayElem<Rest...>::enable(index+1, stride, offset + sizeof(T));
     }
@@ -39,9 +40,15 @@ private:
   template <typename T>
   struct EnableArrayElem<T> {
     static void enable(GLuint index, size_t stride, size_t offset) {
+//      std::cout <<
+//          "binding attrib index " << index <<
+//          " of size " << sizeof(T) <<
+//          " with stride " << stride <<
+//          ", offset " << offset <<
+//          ", dim " << glutils::dim<T>() <<
+//          ", and typeid == float? = " << (glutils::gl_type_id<T>() == GL_FLOAT) << std::endl;
       glEnableVertexAttribArray(index);
-      glVertexAttribPointer(index, dim<T>(), gl_type_id<T>(), GL_FALSE, stride, (void*)offset);
-      std::cout << "index " << index << " is at offset " << offset << std::endl;
+      glVertexAttribPointer(index, glutils::dim<T>(), glutils::gl_type_id<T>(), GL_FALSE, stride, (void*)offset);
     }
   };
 

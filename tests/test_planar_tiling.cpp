@@ -179,5 +179,4 @@ BOOST_AUTO_TEST_CASE(test_quads_with_one_vertex_overlap) {
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
 }
 
-
 BOOST_AUTO_TEST_SUITE_END()

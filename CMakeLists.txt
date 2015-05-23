@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(RNDR)
 
-set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_CXX_COMPILER g++)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build")
 
@@ -30,4 +30,4 @@ add_executable(particle_compute_shader_example particle_compute_shader_example.c
 target_link_libraries(particle_compute_shader_example renderer util)
 
 add_executable(generate_projected_tiles generate_projected_tiles.cpp)
-target_link_libraries(generate_projected_tiles renderer util)
+target_link_libraries(generate_projected_tiles renderer util SOIL)

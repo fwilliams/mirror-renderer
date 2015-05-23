@@ -27,8 +27,6 @@ class ProjectedTileVizWindow: public SDLGLWindow {
 
   FirstPersonCamera camera;
 
-  typedef tuple<vec4, vec4> vertex;
-
 public:
   ProjectedTileVizWindow(unsigned w, unsigned h) : SDLGLWindow(w, h) {}
 
@@ -48,6 +46,7 @@ public:
     Geometry ret = Geometry::fromVertexAttribs<vec4, vec4>(numVertices, numIndices);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    typedef tuple<vec4, vec4> vertex;
     vertex* verts = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
@@ -84,7 +83,7 @@ public:
   template <typename Tiling>
   Geometry generate3dTileGeometry(Tiling& tiling) {
     auto nearestN = [] (const glm::ivec2& tile) {
-      return distance(Tiling::coords2d(tile), vec2(0)) <= 100;
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 10;
     };
 
     tiling.addTilesInNeighborhood(ivec2(0), nearestN);
@@ -95,6 +94,7 @@ public:
     Geometry ret = Geometry::fromVertexAttribs<vec4, vec4>(numVertices, numIndices);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
+    typedef tuple<vec4, vec4> vertex;
     vertex* verts = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
@@ -103,17 +103,22 @@ public:
     size_t vOffset = 0, iOffset = 0;
 
     for(auto i = tiling.tiles_begin(); i != tiling.tiles_end(); i++) {
+      // TODO: Determine texture for each wall
+      // maybe we need edges to determine this information:
+      // i.e. for each edge, use the corresponding tile pair to determine which
+      //      texture to use, and the corresponding vertices to create the mesh
+      //
+
       size_t vBase = vOffset;
       for(auto v = i->second.vertices_begin(); v != i->second.vertices_end(); v++) {
         vec2 pos = (*v)->coords2d();
-        // TODO: Texture coordinates
-        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
-        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
-        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
-        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(1.0));//, vec2(0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(0.0, 0.0, 0.0, 0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x,  0.5, pos.y, 1.0), vec4(1.0, 0.0, 0.0, 0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(0.0, 1.0, 0.0, 0.0));
+        verts[vOffset++] = make_tuple(vec4(pos.x, -0.5, pos.y, 1.0), vec4(1.0, 1.0, 0.0, 0.0));
 
+        // Tesselate the walls
         if(v == i->second.vertices_end() - 1) {
-          // Tesselate the walls
           inds[iOffset++] = vOffset - 4;
           inds[iOffset++] = vOffset - 2;
           inds[iOffset++] = vBase;
@@ -121,7 +126,6 @@ public:
           inds[iOffset++] = vBase + 2;
           inds[iOffset++] = vBase;
         } else {
-          // Tesselate the walls
           inds[iOffset++] = vOffset - 4;
           inds[iOffset++] = vOffset - 2;
           inds[iOffset++] = vOffset;
@@ -130,8 +134,8 @@ public:
           inds[iOffset++] = vOffset;
         }
 
+        // Tesselate the ceiling and floor
         if(v >= i->second.vertices_begin() + 2 && v < i->second.vertices_end() - 1) {
-          // Tesselate the ceiling
           inds[iOffset++] = vBase + 1;
           inds[iOffset++] = vOffset - 3;
           inds[iOffset++] = vOffset + 1;
