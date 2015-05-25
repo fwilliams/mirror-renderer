@@ -179,4 +179,26 @@ BOOST_AUTO_TEST_CASE(test_quads_with_one_vertex_overlap) {
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
 }
 
+BOOST_AUTO_TEST_CASE(test_tiles_with_no_adjacent_edges_have_null_edges) {
+  auto pred = [] (const ivec2& v) {
+    auto c = { ivec2(0, 0) };
+    for(auto i = c.begin(); i != c.end(); i++) {
+      if(*i == v) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  QuadPlanarTileSet testTileset;
+  testTileset.addTilesInNeighborhood(ivec2(0), pred);
+  BOOST_CHECK_EQUAL(testTileset.edgeCount(), 4);
+  BOOST_CHECK_EQUAL(testTileset.vertexCount(), 4);
+  BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
+
+  for(auto e = testTileset.tiles_begin()->second.edges_begin(); e != testTileset.tiles_begin()->second.edges.end(); e++) {
+    BOOST_CHECK(e->first == nullptr);
+  }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
