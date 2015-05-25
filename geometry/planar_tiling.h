@@ -271,6 +271,7 @@ namespace geometry {
         auto adjacentTileIds = this->adjacentTiles(tile);
         auto adjacentEdgeIds = this->edges(tile);
 
+        size_t numEdgesInserted = 0;
         // Insert adjacent tiles into tile map and update Tile data structure
         for(unsigned i = 0;i < adjacentTileIds.size(); i++) {
           glm::ivec2 id = adjacentTileIds[i];
@@ -281,12 +282,14 @@ namespace geometry {
           if(tile == tiles.end()) {
             if(pred(id)) {
               Tile* t =  findTilesDFS(id, pred);
-              tileData->edges[tileData->adjacentTileSize] = std::make_pair(t, std::make_pair(v1, v2));
+              tileData->edges[numEdgesInserted++] = std::make_pair(t, std::make_pair(v1, v2));
               tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
+            } else {
+              tileData->edges[numEdgesInserted++] = std::make_pair(nullptr, std::make_pair(v1, v2));
             }
           } else {
             Tile* t = &tile->second;
-            tileData->edges[tileData->adjacentTileSize] = std::make_pair(t, std::make_pair(v1, v2));
+            tileData->edges[numEdgesInserted++] = std::make_pair(t, std::make_pair(v1, v2));
             tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
           }
         }
