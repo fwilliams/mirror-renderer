@@ -75,11 +75,10 @@ namespace geometry {
     constexpr unsigned tilesPerVertex<PlanarTileType::HEX>() { return 3; }
 
     template <PlanarTileType TYPE>
-    struct TileTopologyPolicy {
-      std::array<glm::ivec2, vertsPerTile<TYPE>()>adjacentVerticesForTile(const glm::ivec2& tile) const;
-      std::array<glm::ivec2, vertsPerTile<TYPE>()> adjacentTilesForTile(const glm::ivec2& tile) const;
-      std::array<glm::ivec2, tilesPerVertex<TYPE>()> adjacentTilesForVertex(const glm::ivec2& vertex) const;
-      std::array<glm::ivec2, tilesPerVertex<TYPE>()> adjacentVerticesForVertex(const glm::ivec2& vertex) const;
+    struct TileTopologyPolicy2 {
+      std::array<glm::ivec2, vertsPerTile<TYPE>()> adjacentTiles(const glm::ivec2& tile) const;
+      std::array<glm::ivec2, vertsPerTile<TYPE>()> adjacentVertices(const glm::ivec2& tile) const;
+      std::array<glm::ivec2, vertsPerTile<TYPE>()> edges(const glm::ivec2& tile) const;
 
       static size_t const NUM_ADJ_VERTS_PER_TILE = vertsPerTile<TYPE>();
       static size_t const NUM_ADJ_TILES_PER_TILE = vertsPerTile<TYPE>();
@@ -89,33 +88,36 @@ namespace geometry {
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
-      return {{ tile, right(tile), upright(tile), up(tile) }};
-    }
-
-    template<>
-    std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForTile(const glm::ivec2 &tile) const {
+    TileTopologyPolicy2<PlanarTileType::QUAD>::adjacentTiles(const glm::ivec2& tile) const {
       return {{ right(tile), up(tile), left(tile), down(tile) }};
     }
 
     template<>
-    std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentTilesForVertex(const glm::ivec2 &v) const {
-      return {{ v, left(v), downleft(v), down(v) }};
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
+    TileTopologyPolicy2<PlanarTileType::TRI>::adjacentTiles(const glm::ivec2& tile) const {
+      if (tile.y % 2 == 0) {
+        return {{ down(tile), upright(tile), up(tile) }};
+      } else {
+        return {{ downleft(tile), down(tile), up(tile) }};
+      }
     }
 
     template<>
-    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::QUAD>()>
-    TileTopologyPolicy<PlanarTileType::QUAD>::adjacentVerticesForVertex(const glm::ivec2& v) const {
-      return {{ up(v), right(v), down(v), left(v) }};
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
+    TileTopologyPolicy2<PlanarTileType::HEX>::adjacentTiles(const glm::ivec2& tile) const {
+      return { {right(tile), up(tile), upleft(tile), left(tile), down(tile), downright(tile) }};
     }
 
 
+    template<>
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
+    TileTopologyPolicy2<PlanarTileType::QUAD>::adjacentVertices(const glm::ivec2& tile) const {
+      return {{ tile, right(tile), upright(tile), up(tile) }};
+    }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
+    TileTopologyPolicy2<PlanarTileType::TRI>::adjacentVertices(const glm::ivec2& tile) const {
       if (tile.y % 2 == 0) {
         glm::ivec2 t(tile.x, tile.y / 2);
         return {{ t, right(t), upright(t) }};
@@ -126,49 +128,33 @@ namespace geometry {
     }
 
     template<>
-    std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForTile(const glm::ivec2 &tile) const {
-      if (tile.y % 2 == 0) {
-        return {{ down(tile), upright(tile), up(tile) }};
-      } else {
-        return {{ down(tile), up(tile), downleft(tile) }};
-      }
-    }
-
-    template<>
-    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::adjacentTilesForVertex(const glm::ivec2& v) const {
-      return {{ v, up(v), left(v), downleft(v), down(downleft(v)), down(v) }};
-    }
-
-    template<>
-    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::TRI>()>
-    TileTopologyPolicy<PlanarTileType::TRI>::adjacentVerticesForVertex(const glm::ivec2& v) const {
-      return {{ up(v), upright(v), right(v), down(v), downleft(v), left(v) }};
-    }
-
-
-
-    template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::adjacentVerticesForTile(const glm::ivec2 &tile) const {
+    TileTopologyPolicy2<PlanarTileType::HEX>::adjacentVertices(const glm::ivec2& tile) const {
       glm::ivec2 t(2*tile.x+tile.y, tile.x + 2*tile.y);
       return {{ t, right(t), glm::ivec2(t.x+2, t.y+1),
-               glm::ivec2(t.x+2, t.y+2), glm::ivec2(t.x+1, t.y+2), up(t) }};
+        glm::ivec2(t.x+2, t.y+2), glm::ivec2(t.x+1, t.y+2), up(t) }};
+    }
+
+
+    template<>
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::QUAD>()>
+    TileTopologyPolicy2<PlanarTileType::QUAD>::edges(const glm::ivec2& tile) const {
+      return {{ glm::ivec2(1, 2), glm::ivec2(2, 3), glm::ivec2(3, 0), glm::ivec2(0, 1) }};
+    }
+
+    template<>
+    std::array<glm::ivec2, vertsPerTile<PlanarTileType::TRI>()>
+    TileTopologyPolicy2<PlanarTileType::TRI>::edges(const glm::ivec2& tile) const {
+      return {{ glm::ivec2(0, 1), glm::ivec2(1, 2), glm::ivec2(2, 0) }};
     }
 
     template<>
     std::array<glm::ivec2, vertsPerTile<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::adjacentTilesForTile(const glm::ivec2 &v) const {
-      return { {right(v), up(v), upleft(v), left(v), down(v), downright(v) }};
+    TileTopologyPolicy2<PlanarTileType::HEX>::edges(const glm::ivec2& tile) const {
+      return {{ glm::ivec2(2, 3), glm::ivec2(3, 4),
+                glm::ivec2(4, 5), glm::ivec2(5, 0),
+                glm::ivec2(0, 1), glm::ivec2(1, 2)}};
     }
-
-    template<>
-    std::array<glm::ivec2, tilesPerVertex<PlanarTileType::HEX>()>
-    TileTopologyPolicy<PlanarTileType::HEX>::adjacentVerticesForVertex(const glm::ivec2& v) const {
-      return {};
-    }
-
 
 
     struct GaussianCoords {
@@ -200,6 +186,10 @@ namespace geometry {
           return adjacentTileSize;
         }
 
+        size_t numEdges() const {
+          return adjacentTileSize;
+        }
+
         glm::ivec2 tileId() const {
           return id;
         }
@@ -210,12 +200,16 @@ namespace geometry {
 
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_TILE> adjacentTiles;
         std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> adjacentVertices;
+        std::array<std::pair<Tile*, std::pair<Vertex*, Vertex*>>, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> edges;
 
         typedef typename decltype(adjacentVertices)::iterator vertex_iterator;
         typedef typename decltype(adjacentVertices)::const_iterator const_vertex_iterator;
 
         typedef typename decltype(adjacentTiles)::iterator tile_iterator;
         typedef typename decltype(adjacentTiles)::const_iterator const_tile_iterator;
+
+        typedef typename decltype(edges)::iterator edge_iterator;
+        typedef typename decltype(edges)::const_iterator const_edge_iterator;
 
         tile_iterator tiles_begin() { return adjacentTiles.begin(); }
         tile_iterator tiles_end() { return adjacentTiles.begin() + adjacentTileSize; }
@@ -226,6 +220,11 @@ namespace geometry {
         vertex_iterator vertices_end() { return adjacentVertices.end(); }
         const_vertex_iterator vertices_begin() const noexcept { return adjacentVertices.begin(); }
         const_vertex_iterator vertices_end() const noexcept { return adjacentVertices.end(); }
+
+        edge_iterator edges_begin() { return edges.begin(); }
+        edge_iterator edges_end() { return edges.begin() + adjacentTileSize; }
+        const_edge_iterator edges_begin() const noexcept { return edges.begin(); }
+        const_edge_iterator edges_end() const noexcept { return edges.begin() + adjacentTileSize; }
 
         T_TYPE data;
       };
@@ -268,19 +267,27 @@ namespace geometry {
         Tile* tileData = &tiles[tile];
         tileData->id = tile;
 
-        auto adjacentVertIds = this->adjacentVerticesForTile(tile);
-        auto adjacentTileIds = this->adjacentTilesForTile(tile);
+        auto adjacentVertIds = this->adjacentVertices(tile);
+        auto adjacentTileIds = this->adjacentTiles(tile);
+        auto adjacentEdgeIds = this->edges(tile);
 
         // Insert adjacent tiles into tile map and update Tile data structure
-        for(auto i = adjacentTileIds.begin(); i != adjacentTileIds.end(); i++) {
-          auto tile = tiles.find(*i);
+        for(unsigned i = 0;i < adjacentTileIds.size(); i++) {
+          glm::ivec2 id = adjacentTileIds[i];
+          Vertex* v1 = &verts[adjacentVertIds[adjacentEdgeIds[i].x]];
+          Vertex* v2 = &verts[adjacentVertIds[adjacentEdgeIds[i].y]];
+
+          auto tile = tiles.find(id);
           if(tile == tiles.end()) {
-            if(pred(*i)) {
-              Tile* t =  findTilesDFS(*i, pred);
+            if(pred(id)) {
+              Tile* t =  findTilesDFS(id, pred);
+              tileData->edges[tileData->adjacentTileSize] = std::make_pair(t, std::make_pair(v1, v2));
               tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
             }
           } else {
-            tileData->adjacentTiles[tileData->adjacentTileSize++] = &tile->second;
+            Tile* t = &tile->second;
+            tileData->edges[tileData->adjacentTileSize] = std::make_pair(t, std::make_pair(v1, v2));
+            tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
           }
         }
 
@@ -346,7 +353,7 @@ namespace geometry {
     struct EmptyStruct {};
 
     template <PlanarTileType T>
-    using PlanarTileSet = PlanarTileMap<EmptyStruct, EmptyStruct, TileTopologyPolicy<T>>;
+    using PlanarTileSet = PlanarTileMap<EmptyStruct, EmptyStruct, TileTopologyPolicy2<T>>;
   }
 
   using QuadPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::QUAD>;
@@ -356,33 +363,33 @@ namespace geometry {
   using HexPlanarTileSet = detail::PlanarTileSet<detail::PlanarTileType::HEX>;
 
   template <typename VT>
-  using QuadPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+  using QuadPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::QUAD>>;
 
   template <typename VT>
-  using TriPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
+  using TriPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename VT>
-  using HexPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
+  using HexPlanarTileMapV = detail::PlanarTileMap<detail::EmptyStruct, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 
 
   template <typename TT>
-  using QuadPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+  using QuadPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy2<detail::PlanarTileType::QUAD>>;
 
   template <typename TT>
-  using TriPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
+  using TriPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy2<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename TT>
-  using HexPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
+  using HexPlanarTileMapT = detail::PlanarTileMap<TT, detail::EmptyStruct, detail::TileTopologyPolicy2<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 
 
   template <typename TT, typename VT>
-  using QuadPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::QUAD>>;
+  using QuadPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::QUAD>>;
 
   template <typename TT, typename VT>
-  using TriPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
+  using TriPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::TRI>, detail::EulerIntCoords>;
 
   template <typename TT, typename VT>
-  using HexPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
+  using HexPlanarTileMapTV = detail::PlanarTileMap<TT, VT, detail::TileTopologyPolicy2<detail::PlanarTileType::HEX>, detail::EulerIntCoords>;
 }
 
 #endif /* GEOMETRY_PLANAR_TILING_H_ */
