@@ -222,9 +222,9 @@ namespace geometry {
         const_vertex_iterator vertices_end() const noexcept { return adjacentVertices.end(); }
 
         edge_iterator edges_begin() { return edges.begin(); }
-        edge_iterator edges_end() { return edges.begin() + adjacentTileSize; }
+        edge_iterator edges_end() { return edges.end(); }
         const_edge_iterator edges_begin() const noexcept { return edges.begin(); }
-        const_edge_iterator edges_end() const noexcept { return edges.begin() + adjacentTileSize; }
+        const_edge_iterator edges_end() const noexcept { return edges.end(); }
 
         T_TYPE data;
       };
@@ -331,6 +331,8 @@ namespace geometry {
       const_vertex_iterator vertices_end() const noexcept { return verts.end(); }
 
       size_t numVertsPerTile() const { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
+
+      size_t numEdgesPerTile() const { return TOPOLOGY::NUM_ADJ_TILES_PER_TILE; };
 
       Tile* addTilesInNeighborhood(glm::ivec2 point, const std::function<bool(const glm::ivec2&)> &pred) {
         if (pred(point)) {

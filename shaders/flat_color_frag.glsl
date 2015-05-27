@@ -1,7 +1,11 @@
 #version 430
 
+uniform sampler2D texid;
+
+in vec2 v_texcoord; 
+ 
 out vec4 fragcolor;
 
 void main() {
-	fragcolor = vec4(1.0);
+	fragcolor = texture(texid, v_texcoord); 
 }
