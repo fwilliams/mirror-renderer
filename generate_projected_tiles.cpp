@@ -105,12 +105,12 @@ public:
     const size_t numVertices = tiling.tileCount() * tiling.numVertsPerTile() * 4;
     const size_t numIndices = tiling.tileCount() * tiling.numEdgesPerTile() * 6;
 
-    Geometry ret = Geometry::fromVertexAttribs<vec4, vec2>(numVertices, numIndices);
+    Geometry ret = Geometry::fromVertexAttribs<vec4, vec3>(numVertices, numIndices);
 
     glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
     struct vertex {
       vec4 pos;
-      vec2 tex;
+      vec3 tex;
     };
     vertex* verts = reinterpret_cast<vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
 
@@ -118,7 +118,7 @@ public:
     GLuint* inds = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
 
-    const size_t IMG_DIM = 256;
+    const size_t IMG_DIM = 1024;
     size_t currentTexIndex = 0;
     unordered_map<string, size_t> textures;
 
@@ -126,16 +126,16 @@ public:
     check_gl_error();
 
     glGenTextures(1, &textureArrayId);
-    glBindTexture(GL_TEXTURE_2D, textureArrayId);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
     check_gl_error();
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     check_gl_error();
 
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, IMG_DIM, roundToNearestPOT(static_cast<size_t>(tiling.edgeCount()*IMG_DIM)));
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, IMG_DIM, IMG_DIM, tiling.edgeCount()*2);
     check_gl_error();
 
     size_t vOffset = 0, iOffset = 0;
@@ -145,22 +145,42 @@ public:
         const vec2 v2 = (e->second.second)->coords2d();
         const size_t vBase = vOffset;
 
-        float textureOffset = 0.0f;
-        string texfilename = "";
+        size_t textureOffset = 0;
         if(e->first != nullptr) {
           typename Tiling::Tile* other = e->first;
+
+          string view = "";
           ivec2 diff = other->id - i->first;
-          if(diff == ivec2(0, 1)) {
-            texfilename = "FrontWallView";
-          } else if(diff == ivec2(0, -1)) {
-            texfilename = "BackWallView";
-          } else if(diff == ivec2(1, 0)) {
-            texfilename = "RightWallView";
-          } else if(diff == ivec2(-1, 0)) {
-            texfilename = "LeftWallView";
+          ivec2 pos = other->id;
+
+          if(other->id.x % 2 != 0) {
+            diff.x = -diff.x;
+            pos.x = -other->id.x;
           }
-          texfilename += string("_") + to_string(other->id.x) + string("_") + to_string(other->id.y) + string(".png");
-          string key = string("textures/") + texfilename;
+          if(other->id.y % 2 != 0) {
+            diff.y = -diff.y;
+            pos.y = -other->id.y;
+          }
+//          cout << "POS: " << to_string(other->id) << " to " << to_string(pos) << endl;
+
+          if(diff == ivec2(0, -1)) {
+            view = "BackWallView";
+          } else if(diff == ivec2(0, 1)) {
+            view = "FrontWallView";
+          } else if(diff == ivec2(-1, 0)) {
+            view = "RightWallView";
+          } else if(diff == ivec2(1, 0)) {
+            view = "LeftWallView";
+          } else {
+            throw runtime_error("Got invalid diff value... This should never happen");
+          }
+
+          string key =
+              string("textures/") + view + string("_") +
+              to_string(pos.x) + string("_") +
+              to_string(pos.y) + string(".png");
+
+//          cout << view << "," << to_string(pos.x) << "," << to_string(pos.y) << endl;
 
           if(textures.find(key) == textures.end()) {
             // Load the image into memory
@@ -171,24 +191,27 @@ public:
               throw runtime_error(string("Failed to load ") + key);
             }
 
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, currentTexIndex*IMG_DIM, w, h, GL_RGBA, GL_UNSIGNED_BYTE, img);
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
+                0, // Mipmap level
+                0, 0, currentTexIndex, // x-offset, y-offset, z-offset
+                w, h, 1, // width, height, depth
+                GL_RGBA, GL_UNSIGNED_BYTE, img);
             check_gl_error();
             SOIL_free_image_data(img);
 
             textures[key] = currentTexIndex;
-            textureOffset = static_cast<float>(currentTexIndex) / static_cast<float>(tiling.edgeCount());
+            textureOffset = currentTexIndex;
             currentTexIndex += 1;
           } else {
-            textureOffset = static_cast<float>(textures[key]) / static_cast<float>(tiling.edgeCount());
+            cout << "REUSE!" << endl;
+            textureOffset = textures[key];
           }
         }
 
-        float size = 1.0f / static_cast<float>(tiling.edgeCount());
-
-        verts[vOffset++] = {vec4(v1.x,  0.5, v1.y, 1.0), vec2(0.0, textureOffset)};
-        verts[vOffset++] = {vec4(v1.x, -0.5, v1.y, 1.0), vec2(0.0, textureOffset + size)};
-        verts[vOffset++] = {vec4(v2.x,  0.5, v2.y, 1.0), vec2(1.0, textureOffset)};
-        verts[vOffset++] = {vec4(v2.x, -0.5, v2.y, 1.0), vec2(1.0, textureOffset + size)};
+        verts[vOffset++] = {vec4(v1.x,  0.5, v1.y, 1.0), vec3(0.0, 0.0, textureOffset)};
+        verts[vOffset++] = {vec4(v1.x, -0.5, v1.y, 1.0), vec3(0.0, 1.0, textureOffset)};
+        verts[vOffset++] = {vec4(v2.x,  0.5, v2.y, 1.0), vec3(1.0, 0.0, textureOffset)};
+        verts[vOffset++] = {vec4(v2.x, -0.5, v2.y, 1.0), vec3(1.0, 1.0, textureOffset)};
 
         inds[iOffset++] = vBase + 0;
         inds[iOffset++] = vBase + 1;
@@ -208,12 +231,11 @@ public:
       v.push_back(i);
     }
     cout << endl;
-    cout << v.size() << endl;
 
     auto triDepthCmpFunc = [&](size_t i1, size_t i2) {
       const vec4 c1 = (verts[inds[i1*3]].pos + verts[inds[i1*3+1]].pos + verts[inds[i1*3+2]].pos) / 3.0f;
       const vec4 c2 = (verts[inds[i2*3]].pos + verts[inds[i2*3+1]].pos + verts[inds[i2*3+2]].pos) / 3.0f;
-      return distance(vec3(0.0), vec3(c1)) < distance(vec3(0.0), vec3(c2));
+      return distance(vec3(0.0), vec3(c1)) > distance(vec3(0.0), vec3(c2));
     };
 
     sort(v.begin(), v.end(), triDepthCmpFunc);
@@ -223,7 +245,6 @@ public:
     }
     cout << endl;
 
-    cout << v.size() << endl;
     vector<GLuint> inds2;
     inds2.reserve(numIndices);
     for(auto i = v.begin(); i != v.end(); i++) {
@@ -249,7 +270,7 @@ public:
   void setup(SDLGLWindow& w) {
     rndr = new Renderer();
     check_gl_error();
-    rndr->setClearColor(vec4(0.5, 0.5, 0.5, 1.0));
+    rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
     rndr->enableDepthBuffer();
     rndr->enableFaceCulling();
 
@@ -293,6 +314,12 @@ public:
         camera.setHorizontalDirection(FirstPersonCamera::CameraDirection::STOPPED);
       }
     }
+
+    if(event.type == SDL_MOUSEBUTTONDOWN) {
+      if(event.button.button == SDL_BUTTON_LEFT) {
+        cout << to_string(camera.getLookatVector()) << endl;
+      }
+    }
   }
 
   void update(SDLGLWindow& w) {
@@ -314,7 +341,7 @@ public:
 
     rndr->setProgram(program);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureArrayId);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
     glUniform1i(glGetUniformLocation(program, "texid"), 0);
 
     rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), Renderer::PrimitiveType::TRIANGLES);
