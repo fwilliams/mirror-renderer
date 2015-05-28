@@ -1,12 +1,14 @@
 #include <iostream>
 #include <glm/glm.hpp>
 
-#include "utils/gl_program_builder.h"
+#include "renderer/renderer.h"
 #include "utils/gl_utils.h"
 #include "utils/sdl_gl_window.h"
 
 using namespace std;
 using namespace glm;
+
+typedef renderer::Renderer<renderer::GlVersion::GL430> Rndr;
 
 class ParticleExampleGLWindow: public SDLGLWindow {
   const unsigned NUM_PARTICLES = 1024 * 1024;
@@ -21,13 +23,17 @@ class ParticleExampleGLWindow: public SDLGLWindow {
   // Compute program object
   GLuint particlePo = 0;
 
+  Rndr* rndr = nullptr;
+
 public:
   ParticleExampleGLWindow(unsigned w, unsigned h) : SDLGLWindow(w, h) {}
   void setup(SDLGLWindow& w) {
+    rndr = new Rndr();
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    particlePo = GLProgramBuilder::buildComputeProgramFromFile("shaders/simple_particles.glsl");
+
+    particlePo = rndr->makeComputeProgramFromFile("shaders/simple_particles.glsl");
 
     glGenBuffers(1, &posSSbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, posSSbo);

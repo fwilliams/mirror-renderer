@@ -1,13 +1,19 @@
 #include <GL/glew.h>
 
+#include <unordered_map>
+#include <array>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "geometry/3d_primitives.h"
+#include "gl_program_builder.h"
 
 #ifndef RENDERER_H_
 #define RENDERER_H_
+
+namespace renderer {
 
 struct Light {
   glm::vec4 pos;
@@ -19,11 +25,27 @@ struct Light {
   glm::float32 dummy2;
 };
 
+enum class GlVersion {
+  GL330, GL430, GLES2
+};
+
+enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
+enum PrimitiveType { TRIANGLES = GL_TRIANGLES, LINES = GL_LINES, POINTS = GL_POINTS };
+enum WindingMode { CW, CCW };
+
+template <GlVersion V>
 class Renderer {
   static const GLuint MATS_UBO_BINDING_POINT = 1;
   static const GLuint LIGHTS_UBO_BINDING_POINT = 2;
 
   static const GLuint NUM_LIGHTS = 10;
+
+  constexpr static const char* MV_MAT_UNIFORM_NAME = "std_Modelview";
+  constexpr static const char* NORMAL_MAT_UNIFORM_NAME = "std_Normal";
+  constexpr static const char* VIEW_MAT_UNIFORM_NAME = "std_View";
+  constexpr static const char* PROJ_MAT_UNIFORM_NAME = "std_Projection";
+  constexpr static const char* GLOB_AMB_UNIFORM_NAME = "std_GlobalAmbient";
+  constexpr static const char* LIGHTS_UNIFORM_NAME = "std_Lights";
 
   struct PerFrameData {
     glm::mat4 modelview_matrix;
@@ -34,14 +56,17 @@ class Renderer {
     Light lights[NUM_LIGHTS];
   };
 
-  GLuint per_frame_ubo = 0;
+  GLuint perFrameUbo = 0;
+
+  GLuint currentProgram = 0;
 
   PerFrameData perFrameData;
 
+  detail::GLProgramBuilder programBuilder;
+
+  void setupUniforms();
+
 public:
-  enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
-  enum PrimitiveType { TRIANGLES = GL_TRIANGLES, LINES = GL_LINES, POINTS = GL_POINTS };
-  enum WindingMode { CW, CCW };
 
   Renderer();
   virtual ~Renderer();
@@ -53,6 +78,22 @@ public:
   void draw(const Geometry& geometry, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
   void setProgram(GLuint program);
+
+  GLuint makeProgramFromFiles(const std::string& vert, const std::string& frag) {
+    return programBuilder.buildFromFiles(vert, frag);
+  }
+
+  GLuint makeProgramFromStrings(const std::string& vert, const std::string& frag) {
+    return detail::GLProgramBuilder::buildFromStrings(vert, frag);
+  }
+
+  GLuint makeComputeProgramFromFile(const std::string& shader);
+
+  GLuint makeComputeProgramFromString(const std::string& shader);
+
+  void addShaderIncludeDir(const std::string& dir) {
+    programBuilder.addIncludeDir(dir);
+  }
 
   void clearViewport() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -142,5 +183,6 @@ public:
     perFrameData.proj_matrix = matrix;
   }
 };
+}
 
 #endif /* RENDERER_H_ */

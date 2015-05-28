@@ -1,6 +1,6 @@
-#version 430
+#version 330
 
-#pragma include "shaders/stddefs.glsl"
+#pragma include "stddefs.glsl"
 
 layout(location=0) in vec4 position;
 layout(location=1) in vec3 texcoord;

@@ -1,6 +1,6 @@
 #version 430
 
-#pragma include "shaders/stddefs.glsl"
+#pragma include "stddefs.glsl"
 
 layout(location = 1) uniform uint light_id;
 

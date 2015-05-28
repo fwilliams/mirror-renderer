@@ -10,7 +10,6 @@
 
 #include "utils/gl_utils.h"
 #include "utils/sdl_gl_window.h"
-#include "utils/gl_program_builder.h"
 #include "renderer/renderer.h"
 #include "renderer/camera.h"
 
@@ -19,11 +18,14 @@
 using namespace std;
 using namespace glm;
 using namespace geometry;
+using namespace renderer;
+
+typedef Renderer<GlVersion::GL330> Rndr;
 
 class ProjectedTileVizWindow: public SDLGLWindow {
   QuadPlanarTileMapV<GLuint> tileMap;
 
-  Renderer* rndr = nullptr;
+  Rndr* rndr = nullptr;
 
   Geometry grid;
 
@@ -97,7 +99,7 @@ public:
   template <typename Tiling>
   Geometry generate3dTileGeometry(Tiling& tiling) {
     auto nearestN = [] (const glm::ivec2& tile) {
-      return distance(Tiling::coords2d(tile), vec2(0)) <= 2;
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 1;
     };
 
     tiling.addTilesInNeighborhood(ivec2(0), nearestN);
@@ -268,7 +270,7 @@ public:
   }
 
   void setup(SDLGLWindow& w) {
-    rndr = new Renderer();
+    rndr = new Rndr();
     check_gl_error();
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
     rndr->enableDepthBuffer();
@@ -281,8 +283,9 @@ public:
     camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.1, 10000.0);
     camera.setCameraVelocity(vec2(0.05));
 
-    program = GLProgramBuilder::buildFromFiles("shaders/flat_color_vert.glsl",
-                                               "shaders/flat_color_frag.glsl");
+    rndr->addShaderIncludeDir("shaders");
+    program = rndr->makeProgramFromFiles("shaders/flat_color_vert.glsl",
+                                         "shaders/flat_color_frag.glsl");
 
     grid = generate3dTileGeometry(tileMap);
 
@@ -344,7 +347,7 @@ public:
     glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
     glUniform1i(glGetUniformLocation(program, "texid"), 0);
 
-    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), Renderer::PrimitiveType::TRIANGLES);
+    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), PrimitiveType::TRIANGLES);
   }
 };
 

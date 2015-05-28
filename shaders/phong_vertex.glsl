@@ -1,6 +1,6 @@
 #version 430
 
-#pragma include "shaders/stddefs.glsl"
+#pragma include "stddefs.glsl"
 
 in vec4 in_position;
 in vec3 in_normal;

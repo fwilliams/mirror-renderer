@@ -1,7 +1,7 @@
 #version 430
 
-#pragma include "shaders/stddefs.glsl"
-#pragma include "shaders/stdlighting.glsl"
+#pragma include "stddefs.glsl"
+#pragma include "stdlighting.glsl"
 
 layout(location = 3) uniform Material material;
 

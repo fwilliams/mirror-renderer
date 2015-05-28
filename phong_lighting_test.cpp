@@ -5,11 +5,11 @@
 
 #include "renderer/renderer.h"
 #include "renderer/camera.h"
-#include "utils/gl_program_builder.h"
 #include "utils/sdl_gl_window.h"
 
 using namespace glm;
 using namespace std;
+using namespace renderer;
 
 struct Material {
   vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
@@ -17,9 +17,11 @@ struct Material {
   float shine = 0.0;
 };
 
+typedef Renderer<GlVersion::GL330> Rndr;
+
 struct SimpleMirrorGLWindow: SDLGLWindow {
   // Renderer to render objects in the scene
-  Renderer* rndr = nullptr;
+  Rndr* rndr = nullptr;
 
   // An FPS camera
   FirstPersonCamera camera;
@@ -72,22 +74,22 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   void setup(SDLGLWindow& w) {
     // Initialize the renderer
-    rndr = new Renderer();
+    rndr = new Rndr();
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
     rndr->enableDepthBuffer();
     rndr->enableFaceCulling();
 
 
     // Build shader programs
-    phongProgram = GLProgramBuilder::buildFromFiles("shaders/phong_vertex.glsl",
+    phongProgram = rndr->makeProgramFromFiles("shaders/phong_vertex.glsl",
                                                   "shaders/phong_frag.glsl");
 
     // Make debug program which draws the normals of a piece of geometry
-    drawNormalsProgram = GLProgramBuilder::buildFromFiles("shaders/draw_normals_vert.glsl",
+    drawNormalsProgram = rndr->makeProgramFromFiles("shaders/draw_normals_vert.glsl",
                                                         "shaders/draw_normals_frag.glsl");
 
     // Make program to draw lights
-    drawLightsProgram = GLProgramBuilder::buildFromFiles("shaders/draw_lights_vert.glsl",
+    drawLightsProgram = rndr->makeProgramFromFiles("shaders/draw_lights_vert.glsl",
                                                        "shaders/draw_lights_frag.glsl");
 
 
