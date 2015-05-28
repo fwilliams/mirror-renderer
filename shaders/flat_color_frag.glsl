@@ -1,5 +1,3 @@
-#version 330
-
 uniform sampler2DArray texid;
 
 in vec2 v_texcoord; 

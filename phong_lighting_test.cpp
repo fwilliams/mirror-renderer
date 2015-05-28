@@ -79,6 +79,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->enableDepthBuffer();
     rndr->enableFaceCulling();
 
+    rndr->addShaderIncludeDir("shaders");
 
     // Build shader programs
     phongProgram = rndr->makeProgramFromFiles("shaders/phong_vertex.glsl",

@@ -1,5 +1,3 @@
-#version 430
-
 uniform samplerCube skyboxSampler;
 
 in vec3 v_position;

@@ -1,4 +1,4 @@
-#version 430
+#extension GL_ARB_explicit_uniform_location : enable
 
 out vec4 fragcolor;
 

@@ -1,5 +1,3 @@
-#version 430
-
 #pragma include "stddefs.glsl"
 
 in vec4 in_position;

@@ -10,17 +10,24 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
-#include <unordered_set>
+#include <vector>
 
 #ifndef PROGRAM_BUILDER_H_
 #define PROGRAM_BUILDER_H_
 
 namespace renderer {
+enum class GlVersion;
+
+template <GlVersion V>
+std::string gl_version_to_string();
+
 namespace detail {
+  template<GlVersion V>
   struct GLProgramBuilder {
     GLuint buildComputeProgramFromString(const std::string& shader) {
       GLuint program = glCreateProgram();
 
+      std::cout << std::to_string(5) << std::endl;
       GLuint compute_shader = compile(GL_COMPUTE_SHADER, shader);
 
       glAttachShader(program, compute_shader);
@@ -81,14 +88,16 @@ namespace detail {
     }
 
     void addIncludeDir(const std::string& dir) {
-      includeDirs.insert(dir);
+      includeDirs.push_back(dir);
     }
 
   private:
-    std::unordered_set<std::string> includeDirs;
+    std::vector<std::string> includeDirs;
 
     std::string preprocess(const std::string& input) {
-      std::string res;
+      std::string res = std::string("#version ") +
+                        gl_version_to_string<V>() +
+                        std::string("\n");
       std::istringstream iss(input);
       for(std::string line; std::getline(iss, line); ) {
         // Copy original line to alter it
@@ -104,20 +113,37 @@ namespace detail {
           std::istringstream buf(line_cpy);
           std::vector<std::string> tokens{std::istream_iterator<std::string>(buf),
                                           std::istream_iterator<std::string>()};
+
+          // TODO: Multiple levels of inclusion
           // Handle #pragma directives
           if(tokens[0] == "#pragma") {
             if(tokens[1] == "include") {
               std::string filename = tokens[2].substr(1, tokens[2].size()-2);
               std::string fn = filename;
               struct stat buf;
-              for(auto iter = includeDirs.begin();
-                  stat(filename.c_str(), &buf) != 0 && iter != includeDirs.end();
-                  iter++) {
+              auto iter = includeDirs.begin();
+              while(stat(fn.c_str(), &buf) != 0 && iter != includeDirs.end()) {
                 fn = *iter + std::string("/") + filename;
+                iter++;
+              }
+              if(iter == includeDirs.end()) {
+                std::ostringstream err;
+                err << "Error: Could not find included file " << filename;
+                throw std::runtime_error(err.str());
               }
               std::string file_str = readFileToString(fn);
               file_str = file_str.append(std::string("\n"));
               res = res.append(file_str);
+              continue;
+            }
+          }
+          if(tokens[0] == "#version") {
+            if(tokens[1] != gl_version_to_string<V>()) {
+              std::ostringstream err;
+              err << "Error: Invalid version " << tokens[1] <<
+                  ". Compiling shader with " << gl_version_to_string<V>() << " context.";
+              throw std::runtime_error(err.str());
+            } else {
               continue;
             }
           }

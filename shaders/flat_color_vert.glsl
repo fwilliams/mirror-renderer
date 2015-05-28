@@ -1,5 +1,3 @@
-#version 330
-
 #pragma include "stddefs.glsl"
 
 layout(location=0) in vec4 position;

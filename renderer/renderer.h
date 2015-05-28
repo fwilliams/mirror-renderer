@@ -26,8 +26,17 @@ struct Light {
 };
 
 enum class GlVersion {
-  GL330, GL430, GLES2
+  GL330, GL430
 };
+
+template <GlVersion V>
+inline std::string gl_version_to_string();
+
+template <>
+inline std::string gl_version_to_string<GlVersion::GL330>() { return "330"; };
+
+template <>
+inline std::string gl_version_to_string<GlVersion::GL430>() { return "430"; };
 
 enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
 enum PrimitiveType { TRIANGLES = GL_TRIANGLES, LINES = GL_LINES, POINTS = GL_POINTS };
@@ -62,7 +71,7 @@ class Renderer {
 
   PerFrameData perFrameData;
 
-  detail::GLProgramBuilder programBuilder;
+  detail::GLProgramBuilder<V> programBuilder;
 
   void setupUniforms();
 
@@ -84,7 +93,7 @@ public:
   }
 
   GLuint makeProgramFromStrings(const std::string& vert, const std::string& frag) {
-    return detail::GLProgramBuilder::buildFromStrings(vert, frag);
+    return programBuilder.buildFromStrings(vert, frag);
   }
 
   GLuint makeComputeProgramFromFile(const std::string& shader);
@@ -117,6 +126,10 @@ public:
 
   glm::vec3 lightPosition(size_t i) {
     return glm::vec3(perFrameData.lights[i].pos);
+  }
+
+  void enableAlphaBlending() {
+    glEnable(GL_BLEND);
   }
 
   void enableFaceCulling() {

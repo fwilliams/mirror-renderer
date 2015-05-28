@@ -275,8 +275,7 @@ public:
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
     rndr->enableDepthBuffer();
     rndr->enableFaceCulling();
-
-    glEnable (GL_BLEND);
+    rndr->enableAlphaBlending();
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     camera.setPosition(vec3(0.5, 0.0, 0.5));
