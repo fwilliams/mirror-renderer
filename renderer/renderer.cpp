@@ -105,7 +105,7 @@ void Renderer<GlVersion::GL330>::setupUniforms() {
       1, value_ptr(perFrameData.global_ambient));
 
   for(size_t i = 0; i < NUM_LIGHTS; i++) {
-    const string baseUniformName = string("Lights[") + std::to_string(i) + string("]");
+    const string baseUniformName = string("std_Lights[") + std::to_string(i) + string("]");
     const string posName = baseUniformName + string(".position");
     const string diffName = baseUniformName + string(".diffuse");
     const string specName = baseUniformName + string(".specular");
