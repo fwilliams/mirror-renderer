@@ -44,8 +44,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   // Programs used to render objects in the scene
   GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0, drawSkyboxProgram = 0;
+
   // Locations of uniforms in programs
-  static const GLuint MATERIAL_LOC = 3;
   static const GLuint COLOR1_LOC = 2;
   static const GLuint COLOR2_LOC = 3;
 
@@ -57,19 +57,22 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->setProgram(drawNormalsProgram);
     glUniform4fv(COLOR1_LOC, 1, glm::value_ptr(color1));
     glUniform4fv(COLOR2_LOC, 1, glm::value_ptr(color2));
-    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.num_vertices * 2, sphereTransform);
-    rndr->draw(cubeMesh.normal_view_vao, cubeMesh.num_vertices * 2, cubeTransform);
-    rndr->draw(planeMesh.normal_view_vao, planeMesh.num_vertices * 2, planeTransform);
+    rndr->draw(sphereMesh.normal_view_vao, sphereMesh.num_vertices * 2, sphereTransform, LINES);
+    rndr->draw(cubeMesh.normal_view_vao, cubeMesh.num_vertices * 2, cubeTransform, LINES);
+    rndr->draw(planeMesh.normal_view_vao, planeMesh.num_vertices * 2, planeTransform, LINES);
     for(size_t i = 0; i < rndr->numLights(); i++) {
       const mat4 lightTransform = scale(translate(mat4(1.0), rndr->lightPosition(i)), vec3(0.1));
-      rndr->draw(cubeMesh.normal_view_vao, (size_t)(cubeMesh.num_vertices * 2), lightTransform);
+      rndr->draw(cubeMesh.normal_view_vao, (size_t)(cubeMesh.num_vertices * 2), lightTransform, LINES);
     }
   }
 
   void setMaterial(const Material& material) {
-    glUniform4fv(MATERIAL_LOC, 1, value_ptr(material.diffuse));
-    glUniform4fv(MATERIAL_LOC + 1, 1, value_ptr(material.specular));
-    glUniform1f(MATERIAL_LOC + 2, material.shine);
+    static GLuint MAT_LOC_DIFF = glGetUniformLocation(phongProgram, "material.diffuse");
+    static GLuint MAT_LOC_SPEC = glGetUniformLocation(phongProgram, "material.specular");
+    static GLuint MAT_LOC_SHINE = glGetUniformLocation(phongProgram, "material.shine_exp");
+    glUniform4fv(MAT_LOC_DIFF, 1, value_ptr(material.diffuse));
+    glUniform4fv(MAT_LOC_SPEC, 1, value_ptr(material.specular));
+    glUniform1f(MAT_LOC_SHINE, material.shine);
   }
 
   void setup(SDLGLWindow& w) {

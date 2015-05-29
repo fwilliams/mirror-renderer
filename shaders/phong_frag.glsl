@@ -1,10 +1,8 @@
-#extension GL_ARB_explicit_uniform_location : enable
-
 #pragma include "stddefs.glsl"
 #pragma include "stdlighting.glsl"
 
 
-layout(location = 3) uniform Material material;
+uniform Material material;
 
 smooth in vec4 v_position;
 smooth in vec3 v_normal;
