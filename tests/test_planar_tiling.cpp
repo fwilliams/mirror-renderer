@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(test_tiles_with_no_adjacent_edges_have_null_edges) {
   BOOST_CHECK_EQUAL(testTileset.tileCount(), 1);
 
   for(auto e = testTileset.tiles_begin()->second.edges_begin(); e != testTileset.tiles_begin()->second.edges.end(); e++) {
-    BOOST_CHECK(e->first == nullptr);
+    BOOST_CHECK(e->adjacentTile == nullptr);
   }
 }
 

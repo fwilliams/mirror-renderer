@@ -30,6 +30,7 @@ class ProjectedTileVizWindow: public SDLGLWindow {
   Geometry grid;
 
   GLuint program = 0;
+  GLuint solidColorProgram = 0;
 
   GLuint textureArrayId = 0;
 
@@ -41,7 +42,7 @@ public:
   template <typename Tiling>
   Geometry generate2dTileGeometry(Tiling& tiling) {
     auto nearestN = [] (const glm::ivec2& tile) {
-      return distance(Tiling::coords2d(tile), vec2(0)) <= 10;
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 3;
     };
 
     tiling.addTilesInNeighborhood(ivec2(0), nearestN);
@@ -99,7 +100,7 @@ public:
   template <typename Tiling>
   Geometry generate3dTileGeometry(Tiling& tiling) {
     auto nearestN = [] (const glm::ivec2& tile) {
-      return distance(Tiling::coords2d(tile), vec2(0)) <= 1;
+      return distance(Tiling::coords2d(tile), vec2(0)) <= 5;
     };
 
     tiling.addTilesInNeighborhood(ivec2(0), nearestN);
@@ -120,7 +121,7 @@ public:
     GLuint* inds = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_WRITE));
 
 
-    const size_t IMG_DIM = 1024;
+    const size_t IMG_DIM = 512;
     size_t currentTexIndex = 0;
     unordered_map<string, size_t> textures;
 
@@ -141,38 +142,41 @@ public:
     check_gl_error();
 
     size_t vOffset = 0, iOffset = 0;
-    for(auto i = tiling.tiles_begin(); i != tiling.tiles_end(); i++) {
-      for(auto e = i->second.edges_begin(); e != i->second.edges_end(); e++) {
-        const vec2 v1 = (e->second.first)->coords2d();
-        const vec2 v2 = (e->second.second)->coords2d();
+    for(auto t = tiling.tiles_begin(); t != tiling.tiles_end(); t++) { // For each tile, t
+      for(auto e = t->second.edges_begin(); e != t->second.edges_end(); e++) { // For each edge of t, e
+    	// The coordinates of the vertices of the e
+        const vec2 v1 = e->v1->coords2d();
+        const vec2 v2 = e->v2->coords2d();
         const size_t vBase = vOffset;
 
         size_t textureOffset = 0;
-        if(e->first != nullptr) {
-          typename Tiling::Tile* other = e->first;
+        if(e->adjacentTile != nullptr) { // If there is a tile adjacent to i, through e
+          typename Tiling::Tile* adjTile = e->adjacentTile; // The tile adjacent to i, through e
 
+          {
+        	const vec3 v1_to_v2 = vec3(v2.x, 0.0, v2.y) - vec3(v1.x, 0.0, v1.y);
+        	const vec3 tangent = normalize(v1_to_v2);
+        	const vec3 normal = normalize(cross(vec3(0.0, 1.0, 0.0), tangent));
+        	const vec3 view_dir = normalize(vec3(v1.x, 0.0f, v1.y) + (v1_to_v2 / 2.0f));
+        	if(dot(view_dir, normal) < 0.0) {
+        		continue;
+        	}
+          }
+
+          // Determine the name of the texture to load for the current tile
+          // TODO: Don't load non visible textures
           string view = "";
-          ivec2 diff = other->id - i->first;
-          ivec2 pos = other->id;
-
-          if(other->id.x % 2 != 0) {
-            diff.x = -diff.x;
-            pos.x = -other->id.x;
-          }
-          if(other->id.y % 2 != 0) {
-            diff.y = -diff.y;
-            pos.y = -other->id.y;
-          }
-//          cout << "POS: " << to_string(other->id) << " to " << to_string(pos) << endl;
+          ivec2 diff = adjTile->id - t->first; // Used to determine which wall is being looked through
+          ivec2 pos = adjTile->id; // Used to determine which tile we are looking at
 
           if(diff == ivec2(0, -1)) {
-            view = "BackWallView";
-          } else if(diff == ivec2(0, 1)) {
             view = "FrontWallView";
-          } else if(diff == ivec2(-1, 0)) {
-            view = "RightWallView";
+          } else if(diff == ivec2(0, 1)) {
+            view = "BackWallView";
           } else if(diff == ivec2(1, 0)) {
             view = "LeftWallView";
+          } else if(diff == ivec2(-1, 0)) {
+            view = "RightWallView";
           } else {
             throw runtime_error("Got invalid diff value... This should never happen");
           }
@@ -229,10 +233,8 @@ public:
     vector<size_t> v;
     v.reserve(numIndices/3);
     for(size_t i = 0; i < numIndices / 3; i++) {
-      cout << " " << i;
       v.push_back(i);
     }
-    cout << endl;
 
     auto triDepthCmpFunc = [&](size_t i1, size_t i2) {
       const vec4 c1 = (verts[inds[i1*3]].pos + verts[inds[i1*3+1]].pos + verts[inds[i1*3+2]].pos) / 3.0f;
@@ -242,15 +244,9 @@ public:
 
     sort(v.begin(), v.end(), triDepthCmpFunc);
 
-    for(auto i = v.begin(); i != v.end(); i++) {
-      cout << " " << *i;
-    }
-    cout << endl;
-
     vector<GLuint> inds2;
     inds2.reserve(numIndices);
     for(auto i = v.begin(); i != v.end(); i++) {
-      //cout << *i << endl;
       GLuint iBase = *i;
       inds2.push_back(inds[iBase * 3]);
       inds2.push_back(inds[iBase * 3 + 1]);
@@ -276,15 +272,17 @@ public:
     rndr->enableDepthBuffer();
     rndr->enableFaceCulling();
     rndr->enableAlphaBlending();
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     camera.setPosition(vec3(0.5, 0.0, 0.5));
     camera.setPerspectiveProjection(45.0, w.aspectRatio(), 0.1, 10000.0);
     camera.setCameraVelocity(vec2(0.05));
 
     rndr->addShaderIncludeDir("shaders");
-    program = rndr->makeProgramFromFiles("shaders/flat_color_vert.glsl",
-                                         "shaders/flat_color_frag.glsl");
+    program = rndr->makeProgramFromFiles("shaders/solid_texture_vert.glsl",
+                                         "shaders/solid_texture_frag.glsl");
+    solidColorProgram = rndr->makeProgramFromFiles("shaders/solid_color_vert.glsl",
+                                         "shaders/solid_color_frag.glsl");
 
     grid = generate3dTileGeometry(tileMap);
 
@@ -338,19 +336,26 @@ public:
     rndr->clearViewport();
     rndr->startFrame();
 
-//    glPointSize(3.0);
-//    glLineWidth(1.0);
-
     rndr->setProgram(program);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
     glUniform1i(glGetUniformLocation(program, "texid"), 0);
 
+    rndr->draw(grid, mat4(1.0), PrimitiveType::TRIANGLES);
+
+    rndr->setProgram(solidColorProgram);
+    glUniform4fv(glGetUniformLocation(solidColorProgram, "color"), 1, value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
+
+    glLineWidth(1.0);
+    rndr->disableDepthBuffer();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), PrimitiveType::TRIANGLES);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    rndr->enableDepthBuffer();
   }
 };
 
 int main(int argc, char** argv) {
-  ProjectedTileVizWindow w(1024, 768);
+  ProjectedTileVizWindow w(800, 600);
   w.mainLoop();
 }

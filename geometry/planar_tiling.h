@@ -177,6 +177,7 @@ namespace geometry {
     public:
       struct Vertex;
       struct Tile;
+      struct Edge;
 
       struct Tile {
         glm::ivec2 id;
@@ -200,7 +201,8 @@ namespace geometry {
 
         std::array<Tile*, TOPOLOGY::NUM_ADJ_TILES_PER_TILE> adjacentTiles;
         std::array<Vertex*, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> adjacentVertices;
-        std::array<std::pair<Tile*, std::pair<Vertex*, Vertex*>>, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> edges;
+        //std::array<std::pair<Tile*, std::pair<Vertex*, Vertex*>>, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> edges;
+        std::array<Edge, TOPOLOGY::NUM_ADJ_VERTS_PER_TILE> edges;
 
         typedef typename decltype(adjacentVertices)::iterator vertex_iterator;
         typedef typename decltype(adjacentVertices)::const_iterator const_vertex_iterator;
@@ -227,6 +229,13 @@ namespace geometry {
         const_edge_iterator edges_end() const noexcept { return edges.end(); }
 
         T_TYPE data;
+      };
+
+      // An edge has 2 vertices and is adjacent to 2 tiless
+      struct Edge {
+    	  Tile* adjacentTile;
+    	  Vertex* v1;
+		  Vertex* v2;
       };
 
       struct Vertex {
@@ -282,14 +291,14 @@ namespace geometry {
           if(tile == tiles.end()) {
             if(pred(id)) {
               Tile* t =  findTilesDFS(id, pred);
-              tileData->edges[numEdgesInserted++] = std::make_pair(t, std::make_pair(v1, v2));
+              tileData->edges[numEdgesInserted++] = Edge{ t, v1, v2 };//std::make_pair(t, std::make_pair(v1, v2));
               tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
             } else {
-              tileData->edges[numEdgesInserted++] = std::make_pair(nullptr, std::make_pair(v1, v2));
+              tileData->edges[numEdgesInserted++] = Edge{ nullptr, v1, v2 };
             }
           } else {
             Tile* t = &tile->second;
-            tileData->edges[numEdgesInserted++] = std::make_pair(t, std::make_pair(v1, v2));
+            tileData->edges[numEdgesInserted++] = Edge{ t, v1, v2 }; //std::make_pair(t, std::make_pair(v1, v2));
             tileData->adjacentTiles[tileData->adjacentTileSize++] = t;
           }
         }
