@@ -206,19 +206,19 @@ public:
         			  string("Using texture ") + key +
 					  string("which is already being used!"));
           }
+
+          verts[vOffset++] = {vec4(v1.x,  0.5, v1.y, 1.0), vec3(0.0, 0.0, textureOffset)};
+          verts[vOffset++] = {vec4(v1.x, -0.5, v1.y, 1.0), vec3(0.0, 1.0, textureOffset)};
+          verts[vOffset++] = {vec4(v2.x,  0.5, v2.y, 1.0), vec3(1.0, 0.0, textureOffset)};
+          verts[vOffset++] = {vec4(v2.x, -0.5, v2.y, 1.0), vec3(1.0, 1.0, textureOffset)};
+
+          inds[iOffset++] = vBase + 0;
+          inds[iOffset++] = vBase + 1;
+          inds[iOffset++] = vBase + 2;
+          inds[iOffset++] = vBase + 1;
+          inds[iOffset++] = vBase + 3;
+          inds[iOffset++] = vBase + 2;
         }
-
-        verts[vOffset++] = {vec4(v1.x,  0.5, v1.y, 1.0), vec3(0.0, 0.0, textureOffset)};
-        verts[vOffset++] = {vec4(v1.x, -0.5, v1.y, 1.0), vec3(0.0, 1.0, textureOffset)};
-        verts[vOffset++] = {vec4(v2.x,  0.5, v2.y, 1.0), vec3(1.0, 0.0, textureOffset)};
-        verts[vOffset++] = {vec4(v2.x, -0.5, v2.y, 1.0), vec3(1.0, 1.0, textureOffset)};
-
-        inds[iOffset++] = vBase + 0;
-        inds[iOffset++] = vBase + 1;
-        inds[iOffset++] = vBase + 2;
-        inds[iOffset++] = vBase + 1;
-        inds[iOffset++] = vBase + 3;
-        inds[iOffset++] = vBase + 2;
       }
     }
 
@@ -264,7 +264,7 @@ public:
     check_gl_error();
     rndr->setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
     rndr->enableDepthBuffer();
-    rndr->enableFaceCulling();
+//    rndr->enableFaceCulling();
     rndr->enableAlphaBlending();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
