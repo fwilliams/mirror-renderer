@@ -20,16 +20,15 @@ using namespace glm;
 using namespace geometry;
 using namespace renderer;
 
-typedef Renderer<GlVersion::GL330> Rndr;
-
 class ProjectedTileVizWindow: public SDLGLWindow {
   QuadPlanarTileMapV<GLuint> tileMap;
 
+  typedef Renderer<GlVersion::GL330> Rndr;
   Rndr* rndr = nullptr;
 
   Geometry grid;
 
-  GLuint program = 0;
+  GLuint solidTextureProgram = 0;
   GLuint solidColorProgram = 0;
 
   GLuint textureArrayId = 0;
@@ -126,20 +125,16 @@ public:
     unordered_map<string, size_t> textures;
 
     glActiveTexture(GL_TEXTURE0+7);
-    check_gl_error();
 
     glGenTextures(1, &textureArrayId);
     glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
-    check_gl_error();
 
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    check_gl_error();
 
     glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, IMG_DIM, IMG_DIM, tiling.edgeCount()*2);
-    check_gl_error();
 
     size_t vOffset = 0, iOffset = 0;
     for(auto t = tiling.tiles_begin(); t != tiling.tiles_end(); t++) { // For each tile, t
@@ -153,18 +148,17 @@ public:
         if(e->adjacentTile != nullptr) { // If there is a tile adjacent to i, through e
           typename Tiling::Tile* adjTile = e->adjacentTile; // The tile adjacent to i, through e
 
-          {
+          { // Don't load views that are not visible from the center tile
         	const vec3 v1_to_v2 = vec3(v2.x, 0.0, v2.y) - vec3(v1.x, 0.0, v1.y);
         	const vec3 tangent = normalize(v1_to_v2);
         	const vec3 normal = normalize(cross(vec3(0.0, 1.0, 0.0), tangent));
-        	const vec3 view_dir = normalize(vec3(v1.x, 0.0f, v1.y) + (v1_to_v2 / 2.0f));
+        	const vec3 view_dir = normalize((vec3(v1.x, 0.0f, v1.y) + (v1_to_v2 / 2.0f)) - camera.getPosition());
         	if(dot(view_dir, normal) < 0.0) {
         		continue;
         	}
           }
 
           // Determine the name of the texture to load for the current tile
-          // TODO: Don't load non visible textures
           string view = "";
           ivec2 diff = adjTile->id - t->first; // Used to determine which wall is being looked through
           ivec2 pos = adjTile->id; // Used to determine which tile we are looking at
@@ -202,15 +196,15 @@ public:
                 0, 0, currentTexIndex, // x-offset, y-offset, z-offset
                 w, h, 1, // width, height, depth
                 GL_RGBA, GL_UNSIGNED_BYTE, img);
-            check_gl_error();
             SOIL_free_image_data(img);
 
             textures[key] = currentTexIndex;
             textureOffset = currentTexIndex;
             currentTexIndex += 1;
           } else {
-            cout << "REUSE!" << endl;
-            textureOffset = textures[key];
+        	  throw runtime_error(
+        			  string("Using texture ") + key +
+					  string("which is already being used!"));
           }
         }
 
@@ -229,32 +223,32 @@ public:
     }
 
 
-    // Depth sort the triangles
-    vector<size_t> v;
-    v.reserve(numIndices/3);
-    for(size_t i = 0; i < numIndices / 3; i++) {
-      v.push_back(i);
+    { // Depth sort the triangles
+      vector<size_t> v;
+      v.reserve(numIndices/3);
+      for(size_t i = 0; i < numIndices / 3; i++) {
+       v.push_back(i);
+      }
+
+      auto triDepthCmpFunc = [&](size_t i1, size_t i2) {
+        const vec4 c1 = (verts[inds[i1*3]].pos + verts[inds[i1*3+1]].pos + verts[inds[i1*3+2]].pos) / 3.0f;
+        const vec4 c2 = (verts[inds[i2*3]].pos + verts[inds[i2*3+1]].pos + verts[inds[i2*3+2]].pos) / 3.0f;
+        return distance(vec3(0.0), vec3(c1)) > distance(vec3(0.0), vec3(c2));
+      };
+
+      sort(v.begin(), v.end(), triDepthCmpFunc);
+
+      vector<GLuint> inds2;
+      inds2.reserve(numIndices);
+      for(auto i = v.begin(); i != v.end(); i++) {
+        GLuint iBase = *i;
+        inds2.push_back(inds[iBase * 3]);
+        inds2.push_back(inds[iBase * 3 + 1]);
+        inds2.push_back(inds[iBase * 3 + 2]);
+      }
+
+      memcpy(inds, inds2.data(), numIndices*sizeof(GLuint));
     }
-
-    auto triDepthCmpFunc = [&](size_t i1, size_t i2) {
-      const vec4 c1 = (verts[inds[i1*3]].pos + verts[inds[i1*3+1]].pos + verts[inds[i1*3+2]].pos) / 3.0f;
-      const vec4 c2 = (verts[inds[i2*3]].pos + verts[inds[i2*3+1]].pos + verts[inds[i2*3+2]].pos) / 3.0f;
-      return distance(vec3(0.0), vec3(c1)) > distance(vec3(0.0), vec3(c2));
-    };
-
-    sort(v.begin(), v.end(), triDepthCmpFunc);
-
-    vector<GLuint> inds2;
-    inds2.reserve(numIndices);
-    for(auto i = v.begin(); i != v.end(); i++) {
-      GLuint iBase = *i;
-      inds2.push_back(inds[iBase * 3]);
-      inds2.push_back(inds[iBase * 3 + 1]);
-      inds2.push_back(inds[iBase * 3 + 2]);
-    }
-
-    memcpy(inds, inds2.data(), numIndices*sizeof(GLuint));
-
 
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -279,7 +273,7 @@ public:
     camera.setCameraVelocity(vec2(0.05));
 
     rndr->addShaderIncludeDir("shaders");
-    program = rndr->makeProgramFromFiles("shaders/solid_texture_vert.glsl",
+    solidTextureProgram = rndr->makeProgramFromFiles("shaders/solid_texture_vert.glsl",
                                          "shaders/solid_texture_frag.glsl");
     solidColorProgram = rndr->makeProgramFromFiles("shaders/solid_color_vert.glsl",
                                          "shaders/solid_color_frag.glsl");
@@ -336,10 +330,10 @@ public:
     rndr->clearViewport();
     rndr->startFrame();
 
-    rndr->setProgram(program);
+    rndr->setProgram(solidTextureProgram);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayId);
-    glUniform1i(glGetUniformLocation(program, "texid"), 0);
+    glUniform1i(glGetUniformLocation(solidTextureProgram, "texid"), 0);
 
     rndr->draw(grid, mat4(1.0), PrimitiveType::TRIANGLES);
 
