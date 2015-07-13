@@ -5,7 +5,7 @@ void std_Diffuse(in vec3 dirToLight, in vec3 normal, in Material mat, out vec4 d
 void std_PhongSpecular(in vec3 dirToLight, in vec3 dirToViewer, in vec3 normal, in Material mat, out vec4 specular) {
 	vec3 reflectionDir = normalize(reflect(-dirToLight, normal));
 	float rDotV = max(dot(reflectionDir, dirToViewer), 0.0);
-	specular = pow(rDotV, mat.shine_exp) * mat.specular;
+	specular = pow(rDotV, mat.shine_exp) * (mat.specular);
 }
 
 void std_BlinnPhongSpecular(in vec3 dirToLight, in vec3 dirToViewer, in vec3 normal, in Material mat, out vec4 specular) {

@@ -55,6 +55,10 @@ void SDLGLWindow::mainLoop() {
   teardown(*this);
 }
 
+void SDLGLWindow::setFullScreen(bool fullscreen) {
+  SDL_SetWindowFullscreen(window, static_cast<Uint32>(fullscreen));
+}
+
 void SDLGLWindow::setMousePosition(int x, int y) {
   SDL_WarpMouseInWindow(window, x, y);
 }

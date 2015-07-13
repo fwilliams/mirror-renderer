@@ -60,6 +60,8 @@ public:
 
   void setMousePosition(int x, int y);
 
+  void setFullScreen(bool fullscreen);
+
   void close() {
     running = false;
   }

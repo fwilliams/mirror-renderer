@@ -1,3 +1,5 @@
+#include <SOIL/SOIL.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -44,6 +46,8 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
   // Programs used to render objects in the scene
   GLuint phongProgram = 0, drawNormalsProgram = 0, drawLightsProgram = 0, drawSkyboxProgram = 0;
+
+  GLuint cubemapTex = 0;
 
   // Locations of uniforms in programs
   static const GLuint COLOR1_LOC = 2;
@@ -110,7 +114,7 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 
     // Setup a grid of 9 lights above the center of the ball and one light along the +z axis
     Light l1 = {vec4(0.0),
-                vec4(0.075, 0.075, 0.125, 1.0),
+                vec4(0.5, 0.5, 0.5, 1.0),
                 vec4(0.325, 0.325, 0.325, 1.0)};
     vec4 center(0.0, 15.0, -5.0, 1.0);
     vec2 squareSize(42.5);
@@ -132,21 +136,40 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
     rndr->setLight(9, l2);
     rndr->setLightAttenuation(9, 20.0);
 
-    rndr->setGlobalAmbient(vec4(0.05, 0.05, 0.05, 1.0));
+    rndr->setGlobalAmbient(vec4(0.005, 0.005, 0.005, 1.0));
 
+//    unsigned char* imgdata;
+//    int width, height;
+//    const char* imgFiles[] = {"+x.png", "-x.png", "+y.png", "-y.png", "+z.png", "-z.png"};
+//    GLenum imgFlags[] = {
+//    		GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+//    		GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+//			GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z };
+//    glGenTextures(1, &cubemapTex);
+//    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTex);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//    for(unsigned i = 0; i < 6; i++) {
+//    	imgdata = SOIL_load_image(imgFiles[i], &width, &height, 0, SOIL_LOAD_RGB);
+//    	glTexImage2D(imgFlags[i], 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, imgdata);
+//    	SOIL_free_image_data(imgdata);
+//    }
 
     // Setup materials
-    planeMaterial.diffuse = vec4(0.15, 0.75, 0.15, 1.0);
-    planeMaterial.specular = vec4(0.0);//vec4(0.35, 0.35, 0.55, 1.0);
-    planeMaterial.shine = 0.0f;
+    planeMaterial.diffuse = vec4(0.005, 0.005, 0.015, 1.0);
+    planeMaterial.specular = vec4(0.25);
+    planeMaterial.shine = 1024.0f;
 
-    cubeMaterial.diffuse = vec4(0.15, 0.15, 0.75, 1.0);
-    cubeMaterial.specular = vec4(0.05, 0.05, 0.15, 1.0);
-    cubeMaterial.shine = 1024.0f;
+    cubeMaterial.diffuse = vec4(0.015, 0.01, 0.01, 1.0);
+    cubeMaterial.specular = vec4(0.17, 0.17, 0.17, 1.0);
+    cubeMaterial.shine = 10.0f;
 
-    sphereMaterial.diffuse = vec4(0.75, 0.15, 0.15, 1.0);
-    sphereMaterial.specular = vec4(0.05, 0.05, 0.15, 1.0);
-    sphereMaterial.shine = 256.0f;
+    sphereMaterial.diffuse = vec4(0.0, 0.05, 0.15, 1.0);
+    sphereMaterial.specular = vec4(0.0, 0.0, 0.0, 1.0);
+    sphereMaterial.shine = 2048.0f;
 
 
     // Move mouse cursor to the middle of the screen and hide it
@@ -176,6 +199,12 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
       }
       if(event.key.keysym.sym == SDLK_d || event.key.keysym.sym == SDLK_a) {
         camera.setHorizontalDirection(FirstPersonCamera::CameraDirection::STOPPED);
+      }
+      if(event.key.keysym.sym == SDLK_f) {
+    	  setFullScreen(true);
+      }
+      if(event.key.keysym.sym == SDLK_ESCAPE) {
+    	  setFullScreen(false);
       }
     }
   }
@@ -237,6 +266,6 @@ struct SimpleMirrorGLWindow: SDLGLWindow {
 };
 
 int main(int argc, char** argv) {
-  SimpleMirrorGLWindow w(1024, 768);
+  SimpleMirrorGLWindow w(640, 480);
   w.mainLoop();
 }

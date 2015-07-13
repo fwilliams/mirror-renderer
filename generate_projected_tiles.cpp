@@ -337,10 +337,8 @@ public:
 
     rndr->draw(grid, mat4(1.0), PrimitiveType::TRIANGLES);
 
-    rndr->setProgram(solidColorProgram);
-    glUniform4fv(glGetUniformLocation(solidColorProgram, "color"), 1, value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
-
-//    glLineWidth(1.0);
+//    rndr->setProgram(solidColorProgram);
+//    glUniform4fv(glGetUniformLocation(solidColorProgram, "color"), 1, value_ptr(vec4(0.0, 1.0, 0.0, 1.0)));
 //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 //    rndr->draw(grid, scale(mat4(1.0), vec3(1.0)), PrimitiveType::TRIANGLES);
 //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

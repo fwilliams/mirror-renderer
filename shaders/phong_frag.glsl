@@ -4,6 +4,9 @@
 
 uniform Material material;
 
+uniform sampler2D diffuseTexture;
+uniform sampler2D specularTexture;
+
 smooth in vec4 v_position;
 smooth in vec3 v_normal;
 smooth in vec2 v_texcoord;
@@ -31,7 +34,7 @@ void main() {
 		//}
 	}
 	
-	vec4 gamma = vec4(1.0/1.8);
-	gamma.a = fragcolor.a;
+	vec4 gamma = vec4(1.0/2.2);
+	gamma.a = 1.0;
 	fragcolor = pow(fragcolor, gamma);
 }

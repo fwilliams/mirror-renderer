@@ -21,6 +21,7 @@ struct Light {
   glm::vec4 specular;
   glm::float32 attenuation;
   glm::float32 enabled;
+private:
   glm::float32 dummy1;
   glm::float32 dummy2;
 };
