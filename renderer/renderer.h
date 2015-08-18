@@ -1,202 +1,178 @@
 #include <GL/glew.h>
 
-#include <unordered_map>
-#include <array>
+#include <memory>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "geometry/3d_primitives.h"
-#include "gl_program_builder.h"
+#include "utils/gl_program_builder.h"
+#include "material.h"
 
-#ifndef RENDERER_H_
-#define RENDERER_H_
-
-namespace renderer {
+#ifndef RENDERER_RENDERER_H_
+#define RENDERER_RENDERER_H_
 
 struct Light {
   glm::vec4 pos;
-  glm::vec4 diffuse;
-  glm::vec4 specular;
+  glm::vec4 color;
   glm::float32 attenuation;
   glm::float32 enabled;
-private:
   glm::float32 dummy1;
   glm::float32 dummy2;
+  glm::float32 dummy3;
 };
 
-enum class GlVersion {
-  GL330, GL430
-};
-
-template <GlVersion V>
-inline std::string gl_version_to_string();
-
-template <>
-inline std::string gl_version_to_string<GlVersion::GL330>() { return "330"; };
-
-template <>
-inline std::string gl_version_to_string<GlVersion::GL430>() { return "430"; };
-
-enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
 enum PrimitiveType { TRIANGLES = GL_TRIANGLES, LINES = GL_LINES, POINTS = GL_POINTS };
+enum FaceCullMode { BACK = GL_BACK, FRONT = GL_FRONT, FRONT_AND_BACK = GL_FRONT_AND_BACK };
 enum WindingMode { CW, CCW };
 
-template <GlVersion V>
 class Renderer {
-  static const GLuint MATS_UBO_BINDING_POINT = 1;
-  static const GLuint LIGHTS_UBO_BINDING_POINT = 2;
+	static const GLuint NUM_LIGHTS = 10;
 
-  static const GLuint NUM_LIGHTS = 10;
+	struct PerFrameData {
+		glm::mat4 modelview_matrix;
+		glm::mat4 normal_matrix;
+		glm::mat4 view_matrix;
+		glm::mat4 proj_matrix;
+		glm::vec4 global_ambient;
+		Light lights[NUM_LIGHTS];
+	};
 
-  constexpr static const char* MV_MAT_UNIFORM_NAME = "std_Modelview";
-  constexpr static const char* NORMAL_MAT_UNIFORM_NAME = "std_Normal";
-  constexpr static const char* VIEW_MAT_UNIFORM_NAME = "std_View";
-  constexpr static const char* PROJ_MAT_UNIFORM_NAME = "std_Projection";
-  constexpr static const char* GLOB_AMB_UNIFORM_NAME = "std_GlobalAmbient";
-  constexpr static const char* LIGHTS_UNIFORM_NAME = "std_Lights";
+	constexpr static const char* MV_MAT_UNIFORM_NAME = "std_Modelview";
+	constexpr static const char* NORMAL_MAT_UNIFORM_NAME = "std_Normal";
+	constexpr static const char* VIEW_MAT_UNIFORM_NAME = "std_View";
+	constexpr static const char* PROJ_MAT_UNIFORM_NAME = "std_Projection";
+	constexpr static const char* GLOB_AMB_UNIFORM_NAME = "std_GlobalAmbient";
+	constexpr static const char* LIGHTS_UNIFORM_NAME = "std_Lights";
 
-  struct PerFrameData {
-    glm::mat4 modelview_matrix;
-    glm::mat4 normal_matrix;
-    glm::mat4 view_matrix;
-    glm::mat4 proj_matrix;
-    glm::vec4 global_ambient;
-    Light lights[NUM_LIGHTS];
-  };
+	PerFrameData perFrameData;
 
-  GLuint perFrameUbo = 0;
+	GLuint currentProgram = 0;
 
-  GLuint currentProgram = 0;
+	utils::GLProgramBuilder programBuilder;
 
-  PerFrameData perFrameData;
+	void setupUniforms();
 
-  detail::GLProgramBuilder<V> programBuilder;
-
-  void setupUniforms();
+	GLuint materialProgram;
+	GLuint drawLightsProgram;
+	GLuint drawNormalsProgram;
 
 public:
 
-  Renderer();
-  virtual ~Renderer();
+	Renderer();
 
-  void startFrame();
+	~Renderer();
 
-  void draw(GLuint vao, size_t num_vertices, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
+	template <typename... Args>
+	std::shared_ptr<Material> createMaterial(Args... args) {
+		auto r = std::make_shared<Material>(Material(std::forward<Args>(args)...));
+		r->m_program = &materialProgram;
+		return r;
+	}
 
-  void draw(const Geometry& geometry, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
+	void startFrame();
 
-  void setProgram(GLuint program);
+	void draw(GLuint vao, size_t num_vertices, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
-  GLuint makeProgramFromFiles(const std::string& vert, const std::string& frag) {
-    return programBuilder.buildFromFiles(vert, frag);
-  }
+	void draw(const Geometry& geometry, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
-  GLuint makeProgramFromStrings(const std::string& vert, const std::string& frag) {
-    return programBuilder.buildFromStrings(vert, frag);
-  }
+	void drawLights(const Geometry& g, const glm::mat4& transform, const PrimitiveType& p = TRIANGLES);
 
-  GLuint makeComputeProgramFromFile(const std::string& shader);
+	void drawNormals(const Geometry& g, const glm::mat4& transform, const glm::vec4& color1, const glm::vec4& color2);
 
-  GLuint makeComputeProgramFromString(const std::string& shader);
+	void setProgram(GLuint program);
 
-  void addShaderIncludeDir(const std::string& dir) {
-    programBuilder.addIncludeDir(dir);
-  }
+	void setMaterial(std::shared_ptr<Material> mat) {
+		setProgram(*mat->m_program);
+		mat->setupUniforms();
+	}
 
-  void clearViewport() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  }
+	void clearViewport() {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 
-  inline const glm::mat4& projection() const {
-    return perFrameData.proj_matrix;
-  }
+	inline const glm::mat4& projectionMatrix() const {
+		return perFrameData.proj_matrix;
+	}
 
-  inline const glm::mat4& view() const {
-    return perFrameData.view_matrix;
-  }
+	inline const glm::mat4& viewMatrix() const {
+		return perFrameData.view_matrix;
+	}
 
-  inline const glm::vec4& globalAmbient() const {
-    return perFrameData.global_ambient;
-  }
+	inline const glm::vec4& globalAmbient() const {
+		return perFrameData.global_ambient;
+	}
 
-  inline size_t numLights() const {
-    return NUM_LIGHTS;
-  }
+	inline size_t numLights() const {
+		return NUM_LIGHTS;
+	}
 
-  glm::vec3 lightPosition(size_t i) {
-    return glm::vec3(perFrameData.lights[i].pos);
-  }
+	glm::vec3 lightPosition(size_t i) {
+		return glm::vec3(perFrameData.lights[i].pos);
+	}
 
-  void enableAlphaBlending() {
-    glEnable(GL_BLEND);
-  }
+	void setGlobalAmbient(const glm::vec4& globalAmb) {
+		perFrameData.global_ambient = globalAmb;
+	}
 
-  void enableFaceCulling() {
-    glEnable(GL_CULL_FACE);
-  }
+	void setLightAttenuation(GLuint light, GLfloat attenuation) {
+		perFrameData.lights[light].attenuation = 1.0f / glm::pow(attenuation, 2.0);
+	}
 
-  void disableFaceCulling() {
-    glDisable(GL_CULL_FACE);
-  }
+	void setLightPos(GLuint light, const glm::vec4& pos) {
+		perFrameData.lights[light].pos = pos;
+	}
 
-  void setFaceCullMode(FaceCullMode mode) {
-    glCullFace(mode);
-  }
+	void setLightColor(GLuint light, const glm::vec4& color) {
+		perFrameData.lights[light].color = color;
+	}
 
-  void setClearColor(const glm::vec4& clearColor) {
-    glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-  }
+	void setLight(GLuint l, const Light& light) {
+		perFrameData.lights[l] = light;
+	}
 
-  void enableDepthBuffer() {
-    glEnable(GL_DEPTH_TEST);
-  }
+	void disableLight(GLuint light) {
+		perFrameData.lights[light].enabled = 0.0; //glm::bvec1(false);
+	}
 
-  void disableDepthBuffer() {
-    glDisable(GL_DEPTH_TEST);
-  }
+	void enableLight(GLuint light) {
+		perFrameData.lights[light].enabled = 1.0; //glm::bvec1(true);
+	}
 
-  void setGlobalAmbient(const glm::vec4& globalAmb) {
-    perFrameData.global_ambient = globalAmb;
-  }
+	void setViewMatrix(const glm::mat4& matrix) {
+		perFrameData.view_matrix = matrix;
+	}
 
-  void setLightAttenuation(GLuint light, GLfloat attenuation) {
-    perFrameData.lights[light].attenuation = 1.0f / glm::pow(attenuation, 2.0);
-  }
+	void setProjectionMatrix(const glm::mat4& matrix) {
+		perFrameData.proj_matrix = matrix;
+	}
 
-  void setLightPos(GLuint light, const glm::vec4& pos) {
-    perFrameData.lights[light].pos = pos;
-  }
+	void enableAlphaBlending() {
+		glEnable(GL_BLEND);
+	}
 
-  void setLightDiffuse(GLuint light, const glm::vec4& diffuse) {
-    perFrameData.lights[light].diffuse = diffuse;
-  }
+	void enableFaceCulling() {
+		glEnable(GL_CULL_FACE);
+	}
 
-  void setLightSpecular(GLuint light, const glm::vec4& specular) {
-    perFrameData.lights[light].specular = specular;
-  }
+	void disableFaceCulling() {
+		glDisable(GL_CULL_FACE);
+	}
 
-  void setLight(GLuint l, const Light& light) {
-    perFrameData.lights[l] = light;
-  }
+	void setFaceCullMode(FaceCullMode mode) {
+		glCullFace(mode);
+	}
 
-  void disableLight(GLuint light) {
-    perFrameData.lights[light].enabled = 0.0; //glm::bvec1(false);
-  }
+	void setClearColor(const glm::vec4& clearColor) {
+		glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+	}
 
-  void enableLight(GLuint light) {
-    perFrameData.lights[light].enabled = 1.0; //glm::bvec1(true);
-  }
+	void enableDepthBuffer() {
+		glEnable(GL_DEPTH_TEST);
+	}
 
-  void setViewMatrix(const glm::mat4& matrix) {
-    perFrameData.view_matrix = matrix;
-  }
-
-  void setProjectionMatrix(const glm::mat4& matrix) {
-    perFrameData.proj_matrix = matrix;
-  }
+	void disableDepthBuffer() {
+		glDisable(GL_DEPTH_TEST);
+	}
 };
-}
 
-#endif /* RENDERER_H_ */
+#endif /* RENDERER_RENDERER_H_ */

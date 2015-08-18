@@ -1,7 +1,6 @@
 struct Light {
     vec4 position;
-    vec4 diffuse;
-    vec4 specular;
+    vec4 color;
     float attenuation;
     float enabled;
 };
@@ -9,7 +8,8 @@ struct Light {
 struct Material {
     vec4 diffuse;
     vec4 specular;
-    float shine_exp;
+    float roughness;
+    float reflectance;
 };
 
 uniform mat4 std_Modelview;

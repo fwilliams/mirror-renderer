@@ -3,14 +3,15 @@
 
 #include "renderer/renderer.h"
 #include "utils/gl_utils.h"
-#include "utils/sdl_gl_window.h"
+#include "utils/basic_window.h"
 
 using namespace std;
 using namespace glm;
+using namespace utils;
 
-typedef renderer::Renderer<renderer::GlVersion::GL430> Rndr;
+typedef Renderer Rndr;
 
-class ParticleExampleGLWindow: public SDLGLWindow {
+class ParticleExampleGLWindow: public BasicGLWindow {
   const unsigned NUM_PARTICLES = 1024 * 1024;
   const unsigned WORK_GROUP_SIZE = 128;
   const unsigned NUM_WORK_GROUPS = (NUM_PARTICLES / WORK_GROUP_SIZE);
@@ -23,17 +24,16 @@ class ParticleExampleGLWindow: public SDLGLWindow {
   // Compute program object
   GLuint particlePo = 0;
 
-  Rndr* rndr = nullptr;
+  GLProgramBuilder programBuilder;
 
 public:
-  ParticleExampleGLWindow(unsigned w, unsigned h) : SDLGLWindow(w, h) {}
-  void setup(SDLGLWindow& w) {
-    rndr = new Rndr();
+  ParticleExampleGLWindow(unsigned w, unsigned h) : BasicGLWindow(w, h) {}
+  void onCreate(Renderer& rndr) {
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
 
-    particlePo = rndr->makeComputeProgramFromFile("shaders/simple_particles.glsl");
+    particlePo = programBuilder.buildComputeProgramFromFile("shaders/simple_particles.glsl");
 
     glGenBuffers(1, &posSSbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, posSSbo);

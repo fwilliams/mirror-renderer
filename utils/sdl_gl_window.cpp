@@ -4,6 +4,8 @@
 
 using namespace std;
 
+namespace detail {
+
 SDLGLWindow::SDLGLWindow(size_t width, size_t height) :
     vpx(width), vpy(height), running(false) {
   SDL_Init(SDL_INIT_EVERYTHING);
@@ -105,4 +107,6 @@ void SDLGLWindow::getNormalizedMousePos(float& x, float& y) {
   // Normalize mouse position
   y = fMousePos[0] / (width()/2.0f);
   x = fMousePos[1] / (height()/2.0f);
+}
+
 }

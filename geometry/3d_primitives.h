@@ -12,7 +12,8 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "../utils/gl_utils.h"
+#include "utils/gl_utils.h"
+#include "utils/gl_vao_generator.h"
 
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_

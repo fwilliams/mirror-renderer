@@ -18,3 +18,4 @@ function(add_gl_unit_test_suite target)
 endfunction()
 
 add_unit_test_suite(test_planar_tiling test_planar_tiling.cpp)
+add_unit_test_suite(test_tuple test_tuple.cpp)

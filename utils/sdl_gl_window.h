@@ -9,69 +9,74 @@
 #ifndef SDL_GL_HELPER_H_
 #define SDL_GL_HELPER_H_
 
+namespace detail {
+
 class SDLGLWindow {
-  size_t vpx;
-  size_t vpy;
+	size_t vpx;
+	size_t vpy;
 
-  SDL_Window* window;
+	SDL_Window* window;
 
-  SDL_GLContext gl_ctx;
+	SDL_GLContext gl_ctx;
 
-  int ctx_maj_version, ctx_min_version;
+	int ctx_maj_version, ctx_min_version;
 
-  bool running;
+	bool running;
+
+protected:
+	virtual void setup(SDLGLWindow&) {};
+
+	virtual void handle_event(SDLGLWindow&, const SDL_Event& event) {};
+
+	virtual void update(SDLGLWindow&) {};
+
+	virtual void draw(SDLGLWindow&) {};
+
+	virtual void teardown(SDLGLWindow&) {};
 
 public:
-  struct GLEWInitFailedException: public std::runtime_error {
-    GLEWInitFailedException(const std::string& arg) :
-      std::runtime_error(arg) {
-    }
-  };
+	struct GLEWInitFailedException: public std::runtime_error {
+		GLEWInitFailedException(const std::string& arg) :
+			std::runtime_error(arg) {
+		}
+	};
 
-  size_t width() const {
-    return vpx;
-  }
+	size_t width() const {
+		return vpx;
+	}
 
-  size_t height() const {
-    return vpy;
-  }
+	size_t height() const {
+		return vpy;
+	}
 
-  double aspectRatio() const {
-    return static_cast<float>(width()) / height();
-  }
+	double aspectRatio() const {
+		return static_cast<float>(width()) / height();
+	}
 
-  SDLGLWindow(size_t width, size_t height);
+	SDLGLWindow(size_t width, size_t height);
 
-  virtual void setup(SDLGLWindow&) {};
+	void enableDebugLogging();
 
-  virtual void handle_event(SDLGLWindow&, const SDL_Event& event) {};
+	void mainLoop();
 
-  virtual void update(SDLGLWindow&) {};
+	void showCursor(bool visible);
 
-  virtual void draw(SDLGLWindow&) {};
+	void setMousePosition(int x, int y);
 
-  virtual void teardown(SDLGLWindow&) {};
+	void setFullScreen(bool fullscreen);
 
-  void enableDebugLogging();
+	void close() {
+		running = false;
+	}
 
-  void mainLoop();
+	void getNormalizedMousePos(float pos[2]);
 
-  void showCursor(bool visible);
+	void getNormalizedMousePos(float& x, float& y);
 
-  void setMousePosition(int x, int y);
-
-  void setFullScreen(bool fullscreen);
-
-  void close() {
-    running = false;
-  }
-
-  void getNormalizedMousePos(float pos[2]);
-
-  void getNormalizedMousePos(float& x, float& y);
-
-  virtual ~SDLGLWindow();
+	virtual ~SDLGLWindow();
 };
+
+}
 
 #endif /* SDL_GL_HELPER_H_ */
 
