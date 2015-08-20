@@ -173,7 +173,7 @@ struct EulerIntCoords {
 
 
 template<class T_TYPE, class V_TYPE, class TOPOLOGY, class COORDS = GaussianCoords>
-class PlanarTileMap : private TOPOLOGY, COORDS {
+class PlanarTileMap : public TOPOLOGY, COORDS {
 public:
   struct Vertex;
   struct Tile;
@@ -338,7 +338,6 @@ public:
 
     centroid /= TOPOLOGY::NUM_ADJ_VERTS_PER_TILE;
 
-//      std::cout << glm::to_string(id) << " -> " << glm::to_string(centroid) << std::endl;
     return centroid;
   }
 
@@ -358,9 +357,15 @@ public:
   const_vertex_iterator vertices_begin() const noexcept { return verts.begin(); }
   const_vertex_iterator vertices_end() const noexcept { return verts.end(); }
 
-  size_t numVertsPerTile() const { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
+  /*
+   * Returns the number of vertices adjacent to one tile
+   */
+  static constexpr size_t numVertsPerTile() { return TOPOLOGY::NUM_ADJ_VERTS_PER_TILE; };
 
-  size_t numEdgesPerTile() const { return TOPOLOGY::NUM_ADJ_TILES_PER_TILE; };
+  /*
+   * Returns the number of edges adjacent to one tile
+   */
+  static constexpr size_t numEdgesPerTile() { return TOPOLOGY::NUM_ADJ_TILES_PER_TILE; };
 
   /*
    * Add tiles to the set which satisfy the predicate in the neighborhood of the tile identified by point.

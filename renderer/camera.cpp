@@ -20,6 +20,10 @@ void Camera::rotateZ(float angle) {
   orientation = rotate(orientation, angle, vec3(0.0, 0.0, 1.0));
 }
 
+void Camera::transformView(const glm::mat4& transformation) {
+  viewTransform = transformation;
+}
+
 void Camera::setRotationAngles(const glm::vec3& angles) {
   orientation = quat(angles);
 }
@@ -67,7 +71,7 @@ void Camera::setPerspectiveProjection(float fov_y, float aspect, float near_z,
 }
 
 mat4 Camera::getViewMatrix() const {
-  return lookAt(getPosition(), getPosition() + getLookatVector(), getUpVector());
+  return lookAt(getPosition(), getPosition() + getLookatVector(), getUpVector()) * viewTransform;
 }
 
 mat4 Camera::getProjectionMatrix() const {

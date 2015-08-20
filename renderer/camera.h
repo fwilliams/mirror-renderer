@@ -10,6 +10,7 @@ class Camera {
   glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);
   glm::mat4 proj_mat;
   glm::vec2 fov;
+  glm::mat4 viewTransform = glm::mat4(1.0);
 
 public:
   void rotateX(float angle);
@@ -18,7 +19,7 @@ public:
 
   void setRotationAngles(const glm::vec3& angles);
 
-  void transform(const glm::mat4& transformation);
+  void transformView(const glm::mat4& transformation);
   void advance(float distance);
   void strafeRight(float amount);
   void strafeUp(float amount);

@@ -4,6 +4,7 @@
 #include <functional>
 #include <climits>
 #include <type_traits>
+#include <array>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -21,19 +22,28 @@ using namespace utils;
 using RenderMesh = TileMesh<TEXTURED, QuadPlanarTileSet>;
 
 class App: public InteractiveGLWindow {
-  QuadPlanarTileMapV<GLuint> tileMap;
   GLProgramBuilder programBuilder;
 
   GLuint renderProgram = 0;
   GLuint solidColorProgram = 0;
 
-
   unique_ptr<RenderMesh> tileMesh;
 
   Mode mode;
 
-  struct Config {
+  class Config {
+    size_t mirrorViewId = 0;
+    std::array<Quad4, 4> mirrorFaces = RenderMesh::edgeFaces();
+  public:
     bool showWireFrame = false;
+
+    Quad4 currentMirror() {
+      return mirrorFaces[mirrorViewId];
+    }
+
+    void nextMirror() {
+      mirrorViewId = (mirrorViewId + 1) % 4;
+    }
   } config;
 
 public:
@@ -70,7 +80,7 @@ public:
   }
 
   void onUpdate() {
-    vec4 p[2] {{-0.5, -0.5, -0.5, 1.0}, {0.5, 0.5, -0.5, 1.0}};
+    vec4 p[2] {config.currentMirror().p1, config.currentMirror().p3};
     for(size_t i = 0; i < 2; i++) {
       p[i] = camera().getViewMatrix() * p[i];
       p[i] /= 2.0;
@@ -83,21 +93,21 @@ public:
     if(isKeyDownEvent(evt, SDLK_t)) {
         config.showWireFrame = !config.showWireFrame;
     }
+    if(isKeyDownEvent(evt, SDLK_m)) {
+      config.nextMirror();
+
+      // Rotate the camera to face the mirror
+      Quad4 q = config.currentMirror();
+      float angle = acos(dot(vec3(0.0, 0.0, 1.0), q.normal())); // angle between the z axis (default view) and mirror plane
+      if(dot(cross(vec3(0.0, 0.0, 1.0), q.normal()), vec3(0.0, 1.0, 0.0)) > 0) { angle = -angle; } // Add sign to the angle
+      camera().transformView(rotate(mat4(1.0), angle, vec3(0.0, 1.0, 0.0))); // Transform the view
+    }
   }
 
   void onDraw(Renderer& rndr) {
     rndr.clearViewport();
 
     rndr.setProgram(renderProgram);
-    //		const vec3 campos = camera().getPosition();
-    //		const float focal_length = -0.5f;
-    //		const float f_minus_zc = focal_length - campos.z;
-    //		mat4 magicmat(f_minus_zc, 0,          campos.x,     -focal_length * campos.x - 0.5,
-    //				0,          f_minus_zc, campos.y,     -focal_length * campos.y - 0.5,
-    //				0,          0,          focal_length, -focal_length,
-    //				0,          0,          1,            -campos.z);
-    //		glUniformMatrix4fv(glGetUniformLocation(renderProgram, "magicmat"),
-    //				1, GL_FALSE, value_ptr(transpose(magicmat)));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());

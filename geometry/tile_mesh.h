@@ -2,9 +2,11 @@
 #include <SOIL/SOIL.h>
 
 #include <string>
+#include <array>
 #include <unordered_map>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/compatibility.hpp>
 
 #include "geometry/planar_tiling.h"
 #include "geometry/3d_primitives.h"
@@ -12,7 +14,70 @@
 #ifndef TILEMESH_H_
 #define TILEMESH_H_
 
+
 namespace geometry {
+
+struct Quad4 {
+  glm::vec4 p1, p2, p3, p4;
+
+  Quad4() = default;
+  Quad4(const glm::vec4& p1, const glm::vec4& p2, const glm::vec4& p3, const glm::vec4& p4) : p1(p1), p2(p2), p3(p3), p4(p4) {}
+
+  glm::vec3 normal() {
+    return glm::cross(glm::vec3(p2-p1), glm::vec3(p4-p1));
+  }
+
+  // TODO: Implement this
+  glm::vec2 centerUV() {
+    return glm::vec2(0.0);
+  }
+
+  glm::vec4 center() {
+    return (p1 + p2 + p3 + p4)/ 4.0f;
+  }
+
+  bool isDegenerate() {
+    glm::vec4 e1 = p2 - p1;
+    glm::vec4 e2 = p4 - p1;
+    glm::vec4 e3 = p2 - p3;
+    glm::vec4 e4 = p4 - p3;
+
+    return dot(e1, e2) == 0.0 || dot(e3, e4) == 0.0;
+  }
+
+  Quad4& operator+=(const Quad4& quad) {
+    p1 += quad.p1;
+    p2 += quad.p2;
+    p3 += quad.p3;
+    p4 += quad.p4;
+    return *this;
+  }
+
+  Quad4& operator-=(const Quad4& quad) {
+    p1 -= quad.p1;
+    p2 -= quad.p2;
+    p3 -= quad.p3;
+    p4 -= quad.p4;
+    return *this;
+  }
+};
+
+Quad4 operator*(const Quad4& quad, const glm::mat4& tx) {
+  return Quad4{quad.p1*tx, quad.p2*tx, quad.p3*tx, quad.p4*tx};
+}
+
+Quad4 operator*(const glm::mat4& tx, const Quad4& quad) {
+  return Quad4{tx*quad.p1, tx*quad.p2, tx*quad.p3, tx*quad.p4};
+}
+
+Quad4 operator+(const Quad4& quad1, const Quad4& quad2) {
+  return Quad4{quad1.p1+quad2.p1, quad1.p2+quad2.p2, quad1.p2+quad2.p3, quad1.p2+quad2.p4};
+}
+
+Quad4 operator-(const Quad4& quad1, const Quad4& quad2) {
+  return Quad4{quad1.p1-quad2.p1, quad1.p2-quad2.p2, quad1.p2-quad2.p3, quad1.p2-quad2.p4};
+}
+
 
 enum Mode {
   TEXTURED,
@@ -60,6 +125,25 @@ public:
 		glm::vec4 pos;
 		glm::vec3 texcoord;
 	};
+
+	static std::array<Quad4, Tiling::numEdgesPerTile()> edgeFaces() {
+	  std::array<Quad4, Tiling::numEdgesPerTile()> ret;
+
+	  auto adjVerts = Tiling::adjacentVertices(glm::ivec2(0));
+	  const glm::vec2 TILE_CENTER_OFFSET = Tiling::tileCenterCoords2d(glm::ivec2(0));
+
+	  for(size_t i = 0; i != Tiling::numEdgesPerTile(); i++) {
+	    glm::vec2 v1 = Tiling::coords2d(adjVerts[i]) - TILE_CENTER_OFFSET;
+	    glm::vec2 v2 = Tiling::coords2d(adjVerts[(i+1) % Tiling::numEdgesPerTile()]) - TILE_CENTER_OFFSET;
+	    ret[i] = Quad4(
+	        glm::vec4(v1.x, -0.5, v1.y, 1.0),
+	        glm::vec4(v2.x, -0.5, v2.y, 1.0),
+	        glm::vec4(v2.x, 0.5, v2.y, 1.0),
+	        glm::vec4(v1.x, 0.5, v1.y, 1.0));
+	  }
+
+	  return ret;
+	}
 
 	GLuint numTextures() const {
 		return mNumTextures;
