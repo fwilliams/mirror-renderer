@@ -47,10 +47,6 @@ void Camera::setPosition(const vec3& position) {
 
 void Camera::setPerspectiveProjection(float left, float right, float bottom, float top,
     float near, float far) {
-  float width = abs(right - left);
-  float height = abs(top - bottom);
-  fov.x = atan(near / (width/2.0));
-  fov.y = atan(near / (height/2.0));
   proj_mat = frustum(left, right, bottom, top, near, far);
 }
 

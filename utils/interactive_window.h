@@ -25,6 +25,8 @@ class InteractiveGLWindow : public detail::SDLGLWindow {
 		mCamera.updatePosition();
 		mRenderer->setProjectionMatrix(mCamera.getProjectionMatrix());
 		mRenderer->setViewMatrix(mCamera.getViewMatrix());
+
+		onUpdate();
 	}
 
 	void handle_event(SDLGLWindow& w, const SDL_Event& event) {
@@ -73,7 +75,6 @@ public:
 	InteractiveGLWindow(size_t w, size_t h) : detail::SDLGLWindow(w, h) {
 		mRenderer = std::make_unique<Renderer>();
 
-		mCamera.setPosition(glm::vec3(0.5, 0.0, 0.5));
 		mCamera.setPerspectiveProjection(45.0, aspectRatio(), 0.1, 10000.0);
 		mCamera.setCameraVelocity(glm::vec2(0.005));
 
@@ -86,6 +87,8 @@ public:
 	virtual void onEvent(const SDL_Event& event) {}
 
 	virtual void onDraw(Renderer& rndr) {}
+
+	virtual void onUpdate() {}
 
 	FirstPersonCamera& camera() {
 		return mCamera;

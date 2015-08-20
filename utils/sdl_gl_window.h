@@ -35,6 +35,21 @@ protected:
 	virtual void teardown(SDLGLWindow&) {};
 
 public:
+
+	static bool isKeyDownEvent(const SDL_Event& event, SDL_Keycode key) {
+    if(event.type == SDL_KEYDOWN) {
+      return event.key.keysym.sym == key;
+    }
+    return false;
+	}
+
+  static bool isKeyUpEvent(SDL_Event& event, SDL_Keycode key) {
+    if(event.type == SDL_KEYUP) {
+      return event.key.keysym.sym == key;
+    }
+    return false;
+  }
+
 	struct GLEWInitFailedException: public std::runtime_error {
 		GLEWInitFailedException(const std::string& arg) :
 			std::runtime_error(arg) {

@@ -14,18 +14,25 @@
 
 namespace geometry {
 
-template <class Tiling>
+enum Mode {
+  TEXTURED,
+  IDENTIFIED
+};
+
+template <geometry::Mode mode, class Tiling>
 class TileMesh {
 public:
 	struct Vertex;
 private:
 	Tiling mTiling;
 
+	bool mRebuildGeometry = true;
+
 	Geometry mGeometry;
 
 	GLuint mTileTextureArray = 0;
 	GLuint mTileDepthTextureArray = 0;
-	GLuint mNumTextures;
+	GLuint mNumTextures = 0;
 
 	void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
 
@@ -42,9 +49,13 @@ private:
 
 	std::pair<std::string, std::string> getTexKey(const glm::ivec2& tileIndex, const glm::ivec2& adjacentTileIndex);
 
-	Geometry generateTileGeometry(Tiling& tiling, size_t radius);
+	Geometry generateTexturedTileGeometry();
+
+	Geometry generateIdentifiedTileGeometry();
 
 public:
+	void printTextureNames();
+
 	struct Vertex {
 		glm::vec4 pos;
 		glm::vec3 texcoord;
@@ -62,15 +73,31 @@ public:
 		return mTileDepthTextureArray;
 	}
 
-	const Geometry& geometry() const {
+	const Geometry& geometry() {
+	  if(mRebuildGeometry) {
+	    switch(mode) {
+	    case TEXTURED:
+        mGeometry = generateTexturedTileGeometry();
+        break;
+	    case IDENTIFIED:
+	      mGeometry = generateIdentifiedTileGeometry();
+	      break;
+	    }
+	    mRebuildGeometry = false;
+	  }
 		return mGeometry;
 	}
 
+	void rebuildMesh(size_t radius);
+
 	TileMesh(size_t radius);
+
 	virtual ~TileMesh();
 };
 
+#ifndef IS_IDE
 #include "tile_mesh.inl.cpp"
+#endif
 
 }
 #endif /* TILEMESH_H_ */

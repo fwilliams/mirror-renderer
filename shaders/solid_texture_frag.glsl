@@ -12,6 +12,7 @@ out vec4 fragcolor;
 uniform mat4 magicmat;
 
 void main() {
+/*
 	float depth = 
 	  texture(depthId, vec3(v_texcoord, v_texindex)).x * 100.0;
 	vec2 pos_xy = depth * (v_texcoord - vec2(0.5)) / 0.5;
@@ -19,6 +20,9 @@ void main() {
 	vec2 texcoords = (pos.xy / pos.w);
 	texcoords = vec2(1.0) - (vec2(0.5) + texcoords);
 	fragcolor = texture(texid, vec3(texcoords, v_texindex)); 
+*/
+
+	fragcolor = texture(texid, vec3(v_texcoord, v_texindex));
 }
 
 	/*
