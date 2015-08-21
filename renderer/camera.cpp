@@ -110,7 +110,7 @@ float Camera::getFovXRadians() const {
   return radians(fov.x);
 }
 
-FirstPersonCamera::FirstPersonCamera(const glm::vec2& vel, const glm::vec2& angVel) :
+FirstPersonCamera::FirstPersonCamera(const glm::vec3& vel, const glm::vec2& angVel) :
     cameraVelocity(vel), cameraAngularVel(angVel) {}
 
 void FirstPersonCamera::setHorizontalDirection(const CameraDirection& dir) {
@@ -130,6 +130,20 @@ void FirstPersonCamera::setHorizontalDirection(const CameraDirection& dir) {
 void FirstPersonCamera::setForwardDirection(const CameraDirection& dir) {
   switch(dir) {
   case CameraDirection::POSITIVE:
+    moveCamera.z = 1.0;
+    break;
+  case CameraDirection::NEGATIVE:
+    moveCamera.z = -1.0;
+    break;
+  case CameraDirection::STOPPED:
+    moveCamera.z = 0.0;
+    break;
+  }
+}
+
+void FirstPersonCamera::setUpDirection(const CameraDirection& dir) {
+  switch(dir) {
+  case CameraDirection::POSITIVE:
     moveCamera.y = 1.0;
     break;
   case CameraDirection::NEGATIVE:
@@ -146,7 +160,7 @@ void FirstPersonCamera::setDirection(const CameraDirection& dirH, const CameraDi
   setForwardDirection(dirV);
 }
 
-void FirstPersonCamera::setCameraVelocity(const glm::vec2& vel) {
+void FirstPersonCamera::setCameraVelocity(const glm::vec3& vel) {
   cameraVelocity = vel;
 }
 
@@ -171,6 +185,7 @@ void FirstPersonCamera::setAngularVelocity(const glm::vec2& vel) {
 }
 
 void FirstPersonCamera::updatePosition() {
-  advance(moveCamera.y * cameraVelocity.y);
+  advance(moveCamera.z * cameraVelocity.z);
   strafeRight(moveCamera.x * cameraVelocity.x);
+  strafeUp(moveCamera.y * cameraVelocity.y);
 }

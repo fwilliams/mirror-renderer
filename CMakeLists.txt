@@ -23,11 +23,5 @@ add_subdirectory(utils)
 add_subdirectory(tests)
 enable_testing()
 
-add_executable(phong_lighting_test phong_lighting_test.cpp)
-target_link_libraries(phong_lighting_test renderer util SOIL)
-
-add_executable(particle_compute_shader_example particle_compute_shader_example.cpp)
-target_link_libraries(particle_compute_shader_example renderer util)
-
 add_executable(generate_projected_tiles generate_projected_tiles.cpp)
 target_link_libraries(generate_projected_tiles renderer util SOIL)

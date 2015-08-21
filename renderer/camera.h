@@ -43,26 +43,27 @@ public:
 };
 
 class FirstPersonCamera : public Camera {
-  glm::vec2 moveCamera = glm::vec2(0, 0);
+  glm::vec3 moveCamera = glm::vec3(0, 0, 0);
   glm::vec2 cameraSphericalCoords;
-  glm::vec2 cameraVelocity = glm::vec2(1.0);
+  glm::vec3 cameraVelocity = glm::vec3(1.0);
   glm::vec2 cameraAngularVel = glm::vec2(1.0);
 
 public:
   FirstPersonCamera() = default;
-  FirstPersonCamera(const glm::vec2& vel, const glm::vec2& angVel);
+  FirstPersonCamera(const glm::vec3& vel, const glm::vec2& angVel);
 
   enum class CameraDirection { POSITIVE, NEGATIVE, STOPPED };
   void setHorizontalDirection(const CameraDirection& dir);
   void setForwardDirection(const CameraDirection& dir);
+  void setUpDirection(const CameraDirection& dir);
   void setDirection(const CameraDirection& dirH, const CameraDirection& dirF);
-  void setCameraVelocity(const glm::vec2& vel);
+  void setCameraVelocity(const glm::vec3& vel);
   void setAngularVelocity(const glm::vec2& vel);
 
   void updateLookat(const glm::vec2& pos);
   void updatePosition();
 
-  glm::vec2 getCameraVelocity() const {
+  glm::vec3 getCameraVelocity() const {
     return moveCamera * cameraVelocity;
   }
 };

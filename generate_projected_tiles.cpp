@@ -76,7 +76,7 @@ public:
         "shaders/solid_color_vert.glsl",
         "shaders/solid_color_frag.glsl");
 
-    tileMesh = make_unique<RenderMesh>(5);
+    tileMesh = make_unique<RenderMesh>(10);
   }
 
   void onUpdate() {

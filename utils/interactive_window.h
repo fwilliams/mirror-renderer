@@ -43,6 +43,18 @@ class InteractiveGLWindow : public detail::SDLGLWindow {
 			if(event.key.keysym.sym == SDLK_a) {
 				mCamera.setHorizontalDirection(FirstPersonCamera::CameraDirection::NEGATIVE);
 			}
+      if(event.key.keysym.sym == SDLK_UP) {
+        mCamera.setUpDirection(FirstPersonCamera::CameraDirection::POSITIVE);
+      }
+      if(event.key.keysym.sym == SDLK_DOWN) {
+        mCamera.setUpDirection(FirstPersonCamera::CameraDirection::NEGATIVE);
+      }
+      if(event.key.keysym.sym == SDLK_RIGHT) {
+        mCamera.setHorizontalDirection(FirstPersonCamera::CameraDirection::POSITIVE);
+      }
+      if(event.key.keysym.sym == SDLK_LEFT) {
+        mCamera.setHorizontalDirection(FirstPersonCamera::CameraDirection::NEGATIVE);
+      }
 		}
 
 		if(event.type == SDL_KEYUP) {
@@ -52,6 +64,12 @@ class InteractiveGLWindow : public detail::SDLGLWindow {
 			if(event.key.keysym.sym == SDLK_d || event.key.keysym.sym == SDLK_a) {
 				mCamera.setHorizontalDirection(FirstPersonCamera::CameraDirection::STOPPED);
 			}
+      if(event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN) {
+        mCamera.setUpDirection(FirstPersonCamera::CameraDirection::STOPPED);
+      }
+      if(event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_RIGHT) {
+        mCamera.setHorizontalDirection(FirstPersonCamera::CameraDirection::STOPPED);
+      }
 		}
 
 		if(event.type == SDL_MOUSEBUTTONDOWN) {
@@ -76,7 +94,7 @@ public:
 		mRenderer = std::make_unique<Renderer>();
 
 		mCamera.setPerspectiveProjection(45.0, aspectRatio(), 0.1, 10000.0);
-		mCamera.setCameraVelocity(glm::vec2(0.005));
+		mCamera.setCameraVelocity(glm::vec3(0.005));
 
 		setMousePosition(width()/2, height()/2);
 		showCursor(false);

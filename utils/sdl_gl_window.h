@@ -43,7 +43,7 @@ public:
     return false;
 	}
 
-  static bool isKeyUpEvent(SDL_Event& event, SDL_Keycode key) {
+  static bool isKeyUpEvent(const SDL_Event& event, SDL_Keycode key) {
     if(event.type == SDL_KEYUP) {
       return event.key.keysym.sym == key;
     }
