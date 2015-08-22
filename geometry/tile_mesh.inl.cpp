@@ -116,10 +116,13 @@ std::pair<std::string, std::string> TileMesh<mode, Tiling>::getTexKey(const glm:
 // TODO: Identify each face based on the tile it is looking into
 template <Mode mode, typename Tiling>
 Geometry TileMesh<mode, Tiling>::generateTexturedTileGeometry() {
+
+  // These numbers are an overestimate of the actual number of vertices.
+  // TODO: Compute exact values
   const size_t numVertices = mTiling.tileCount() * mTiling.numVertsPerTile() * 4;
   const size_t numIndices = mTiling.tileCount() * mTiling.numEdgesPerTile() * 6;
 
-  Geometry ret = Geometry::fromVertexAttribs<glm::vec4, glm::vec3>(numVertices, numIndices);
+  Geometry ret = Geometry::makeGeometry<Vertex4P3T>(numVertices, numIndices);
 
   glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
 
@@ -196,8 +199,11 @@ Geometry TileMesh<mode, Tiling>::generateTexturedTileGeometry() {
     }
   }
 
-  // Depth sort the triangles
-  depthsort(verts, inds, numIndices);
+  // TODO: This is kind of a hack, our buffers will be too big
+  ret.num_indices = iOffset;
+  ret.num_vertices = vOffset;
+
+  depthsort(verts, inds, ret.num_indices);
 
   glUnmapBuffer(GL_ARRAY_BUFFER);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -217,7 +223,7 @@ Geometry TileMesh<mode, Tiling>::generateIdentifiedTileGeometry() {
   const size_t numIndices = mTiling.tileCount() * mTiling.numEdgesPerTile() * 6;
 
   // Setup the geometry to return
-  Geometry ret = Geometry::fromVertexAttribs<glm::vec4, glm::vec3>(numVertices, numIndices);
+  Geometry ret = Geometry::makeGeometry<Vertex4P3T>(numVertices, numIndices);
   glBindBuffer(GL_ARRAY_BUFFER, ret.vbo);
   Vertex* verts = reinterpret_cast<Vertex*>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE));
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret.ibo);
@@ -280,6 +286,9 @@ Geometry TileMesh<mode, Tiling>::generateIdentifiedTileGeometry() {
       }
     }
   }
+
+  ret.num_indices = iOffset;
+  ret.num_vertices = vOffset;
 
   glUnmapBuffer(GL_ARRAY_BUFFER);
   glBindBuffer(GL_ARRAY_BUFFER, 0);

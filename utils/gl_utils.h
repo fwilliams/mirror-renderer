@@ -3,7 +3,7 @@
 #include <tuple>
 #include <iostream>
 
-#include "glm_traits.h"
+#include "gl_traits.h"
 
 #ifndef GL_HELPER_H_
 #define GL_HELPER_H_

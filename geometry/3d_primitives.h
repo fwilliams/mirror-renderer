@@ -13,7 +13,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "utils/gl_utils.h"
-#include "utils/gl_vao_generator.h"
+#include "vertex.h"
 
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
@@ -26,22 +26,22 @@ struct vertexPosNormTex {
 
 class Geometry {
 public:
-  template <typename... VertexAttribs>
-  static Geometry fromVertexAttribs(GLuint num_vertices, GLuint num_indices) {
+  template <class Vertex>
+  static Geometry makeGeometry(GLuint num_vertices, GLuint num_indices) {
     Geometry g;
     g.num_vertices = num_vertices;
     g.num_indices = num_indices;
 
     glGenBuffers(1, &g.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, g.vbo);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(std::tuple<VertexAttribs...>),
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(Vertex),
                  nullptr, GL_STATIC_DRAW);
 
     glGenBuffers(1, &g.ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), nullptr, GL_STATIC_DRAW);
 
-    g.vao = VAOGenerator::generateAttribArray<VertexAttribs...>(0);
+    g.vao = geometry::generateVAO<Vertex>();
 
     glGenBuffers(1, &g.normal_view_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, g.normal_view_vbo);

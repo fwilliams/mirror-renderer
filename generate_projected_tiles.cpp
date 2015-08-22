@@ -76,7 +76,7 @@ public:
         "shaders/solid_color_vert.glsl",
         "shaders/solid_color_frag.glsl");
 
-    tileMesh = make_unique<RenderMesh>(10);
+    tileMesh = make_unique<RenderMesh>(5);
   }
 
   void onUpdate() {
@@ -93,7 +93,7 @@ public:
     if(isKeyDownEvent(evt, SDLK_t)) {
         config.showWireFrame = !config.showWireFrame;
     }
-    if(isKeyDownEvent(evt, SDLK_m)) {
+    if(isKeyDownEvent(evt, SDLK_v)) {
       config.nextMirror();
 
       // Rotate the camera to face the mirror
@@ -109,6 +109,19 @@ public:
 
     rndr.setProgram(renderProgram);
 
+    float f = 1.0; // TODO: I think this is a problem and we should have an f for each mirror
+    vec3 c = camera().getPosition();
+    float fMinusZc = f - c.z;
+    mat4 reprojectionMat = mat4(vec4(fMinusZc, 0, 0, 0),
+                                vec4(0, fMinusZc, 0, 0),
+                                vec4(c.x, c.y, f, 1),
+                                vec4(-f*c, -c.z));
+
+//    mat4 reprojectionMat = mat4(vec4(fMinusZc, 0,        c.x, -f*c.x),
+//                                vec4(0,        fMinusZc, c.y, -f*c.y),
+//                                vec4(0,        0,        f,   -f*c.z),
+//                                vec4(0,        0,        1,   -c.z));
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());
     glUniform1i(glGetUniformLocation(renderProgram, "texid"), 0);
@@ -117,6 +130,7 @@ public:
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileDepthTextureArray());
     glUniform1i(glGetUniformLocation(renderProgram, "depthId"), 1);
 
+    glUniformMatrix4fv(glGetUniformLocation(renderProgram, "reprojMat"), 1, GL_FALSE, value_ptr(reprojectionMat));
     rndr.draw(tileMesh->geometry(), mat4(1.0), PrimitiveType::TRIANGLES);
 
     if(config.showWireFrame) {

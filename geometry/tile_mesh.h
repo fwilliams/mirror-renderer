@@ -10,6 +10,7 @@
 
 #include "geometry/planar_tiling.h"
 #include "geometry/3d_primitives.h"
+#include "geometry/vertex.h"
 
 #ifndef TILEMESH_H_
 #define TILEMESH_H_

@@ -9,24 +9,23 @@ flat in uint v_texindex;
 
 out vec4 fragcolor;
 
-uniform mat4 magicmat;
+uniform mat4 reprojMat;
 
 void main() {
-/*
-	float depth = 
-	  texture(depthId, vec3(v_texcoord, v_texindex)).x * 100.0;
-	vec2 pos_xy = depth * (v_texcoord - vec2(0.5)) / 0.5;
-	vec4 pos = magicmat * vec4(pos_xy, depth, 1.0);
-	vec2 texcoords = (pos.xy / pos.w);
-	texcoords = vec2(1.0) - (vec2(0.5) + texcoords);
-	fragcolor = texture(texid, vec3(texcoords, v_texindex)); 
-*/
-
-	fragcolor = texture(texid, vec3(v_texcoord, v_texindex));
-}
-
+	float depth = texture(depthId, vec3(v_texcoord, v_texindex)).r * 50.0;
+	vec2 uv = v_texcoord - vec2(0.5);
+	vec3 pos = normalize(vec3(gl_FragCoord.xy, -0.5)) * depth;
+	
+	vec4 reprojectedPos = reprojMat * vec4(pos, 1.0);
+	vec3 pp = reprojectedPos.xyz / reprojectedPos.w;
+	vec2 tc = pp.xy/pp.z;
+	
 	/*
+	fragcolor = texture(texid, vec3(tc, v_texindex));
+	   
+	fragcolor = vec4(tc, 0.0, 0.5);
+	*/       
 	fragcolor = 
-	  vec4(texture(depthId, vec3(v_texcoord, v_texindex)).rgb, 
+	  vec4(normalize(pos+vec3(50.0)), 
 	       texture(texid, vec3(v_texcoord, v_texindex)).a);
-	*/
+}
