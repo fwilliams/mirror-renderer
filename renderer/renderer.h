@@ -150,6 +150,10 @@ public:
 		glEnable(GL_BLEND);
 	}
 
+  void disableAlphaBlending() {
+    glDisable(GL_BLEND);
+  }
+
 	void enableFaceCulling() {
 		glEnable(GL_CULL_FACE);
 	}

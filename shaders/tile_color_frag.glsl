@@ -1,10 +1,17 @@
 #pragma include "stddefs.glsl"
 
-flat in float v_texindex;
+uniform sampler2DArray texid;
+uniform sampler2DArray depthId;
 
-out vec4 fragcolor;
+in vec2 v_texcoord; 
+flat in uint v_texindex;
+flat in vec3 v_mirrorCtr;
+
+layout(location = 0) out vec4 fragcolor;
 
 void main() {	
-	gl_FragDepth = (1.0f - gl_FragCoord.z);
-	fragcolor = vec4(vec3(0.1, v_texindex, 0.1), 1.0);
+	vec3 tc = vec3(v_texcoord, v_texindex);
+	fragcolor = vec4(texture(depthId, tc).rgb, texture(texid, tc).a); 
+	fragcolor = texture(depthId, tc);
+	
 }

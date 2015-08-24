@@ -19,17 +19,23 @@ using namespace glm;
 using namespace geometry;
 using namespace utils;
 
-using RenderMesh = TileMesh<TEXTURED, QuadPlanarTileSet>;
+using RenderMesh = TileMesh<QuadPlanarTileSet>;
 
 class App: public InteractiveGLWindow {
   GLProgramBuilder programBuilder;
 
-  GLuint renderProgram = 0;
+  GLuint drawSceneProgram = 0;
+  GLuint vcLookupProgram = 0;
   GLuint solidColorProgram = 0;
+
+  GLuint vcLookubFramebuffer = 0;
+  GLuint vcLookupTexture = 0;
+
+  ivec2 ctr = ivec2(0);
 
   unique_ptr<RenderMesh> tileMesh;
 
-  Mode mode;
+  float np = 0;
 
   class Config {
     size_t mirrorViewId = 0;
@@ -47,36 +53,51 @@ class App: public InteractiveGLWindow {
   } config;
 
 public:
-  App(unsigned w, unsigned h, Mode mode = TEXTURED) : InteractiveGLWindow(w, h), mode(mode) {}
+  App(unsigned w, unsigned h) : InteractiveGLWindow(w, h) {}
 
   void onCreate(Renderer& rndr) {
-    rndr.setClearColor(vec4(0.1, 0.1, 0.1, 1.0));
+    rndr.setClearColor(vec4(0.1, 0.1, 0.5, 1.0));
     rndr.enableFaceCulling();
+
+    rndr.enableAlphaBlending();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     programBuilder.addIncludeDir("shaders/glsl330");
     programBuilder.addIncludeDir("shaders");
 
-    if(mode == IDENTIFIED) {
-      rndr.enableDepthBuffer();
+    vcLookupProgram = programBuilder.buildFromFiles(
+        "shaders/tile_color_vert.glsl",
+        "shaders/tile_color_frag.glsl");
 
-      renderProgram = programBuilder.buildFromFiles(
-          "shaders/tile_color_vert.glsl",
-          "shaders/tile_color_frag.glsl");
-
-    } else if(mode == TEXTURED) {
-      rndr.enableAlphaBlending();
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-      renderProgram = programBuilder.buildFromFiles(
-          "shaders/solid_texture_vert.glsl",
-          "shaders/solid_texture_frag.glsl");
-    }
+    drawSceneProgram = programBuilder.buildFromFiles(
+        "shaders/solid_texture_vert.glsl",
+        "shaders/solid_texture_frag.glsl");
 
     solidColorProgram = programBuilder.buildFromFiles(
         "shaders/solid_color_vert.glsl",
         "shaders/solid_color_frag.glsl");
 
-    tileMesh = make_unique<RenderMesh>(5);
+    glGenFramebuffers(1, &vcLookubFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, vcLookubFramebuffer);
+
+    glGenTextures(1, &vcLookupTexture);
+    glBindTexture(GL_TEXTURE_2D, vcLookupTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLuint depthrenderbuffer;
+    glGenRenderbuffers(1, &depthrenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width(), height());
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, vcLookupTexture, 0);
+    GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers);
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+    tileMesh = make_unique<RenderMesh>(2);
   }
 
   void onUpdate() {
@@ -85,8 +106,9 @@ public:
       p[i] = camera().getViewMatrix() * p[i];
       p[i] /= 2.0;
     }
+    np = 1.0 - p[0].z;
 
-    camera().setPerspectiveProjection(p[0].x, p[1].x, p[1].y, p[0].y, 1.0 - p[0].z, 10000.0);
+    camera().setPerspectiveProjection(p[1].x, p[0].x, p[0].y, p[1].y, 1.0 - p[0].z, 10000.0);
   }
 
   void onEvent(const SDL_Event& evt) {
@@ -102,36 +124,70 @@ public:
       if(dot(cross(vec3(0.0, 0.0, 1.0), q.normal()), vec3(0.0, 1.0, 0.0)) > 0) { angle = -angle; } // Add sign to the angle
       camera().transformView(rotate(mat4(1.0), angle, vec3(0.0, 1.0, 0.0))); // Transform the view
     }
+
+    if(isKeyDownEvent(evt, SDLK_EQUALS)) {
+      ctr += ivec2(0, 1);
+      tileMesh->rebuildMesh(2, ctr);
+      std::cout << "rebuild + " << to_string(ctr) << std::endl;
+    }
+
+    if(isKeyDownEvent(evt, SDLK_MINUS)) {
+      ctr -= ivec2(0, 1);
+      tileMesh->rebuildMesh(2, ctr);
+      std::cout << "rebuild - " << to_string(ctr) << std::endl;
+    }
   }
 
   void onDraw(Renderer& rndr) {
     rndr.clearViewport();
 
-    rndr.setProgram(renderProgram);
 
-    float f = 1.0; // TODO: I think this is a problem and we should have an f for each mirror
-    vec3 c = camera().getPosition();
-    float fMinusZc = f - c.z;
-    mat4 reprojectionMat = mat4(vec4(fMinusZc, 0, 0, 0),
-                                vec4(0, fMinusZc, 0, 0),
-                                vec4(c.x, c.y, f, 1),
-                                vec4(-f*c, -c.z));
+    rndr.enableDepthBuffer();
 
-//    mat4 reprojectionMat = mat4(vec4(fMinusZc, 0,        c.x, -f*c.x),
-//                                vec4(0,        fMinusZc, c.y, -f*c.y),
-//                                vec4(0,        0,        f,   -f*c.z),
-//                                vec4(0,        0,        1,   -c.z));
+    glBindFramebuffer(GL_FRAMEBUFFER, vcLookubFramebuffer);
+    glViewport(0, 0, width(), height());
+
+    rndr.setProgram(vcLookupProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());
-    glUniform1i(glGetUniformLocation(renderProgram, "texid"), 0);
+    glUniform1i(glGetUniformLocation(vcLookupProgram, "texid"), 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileDepthTextureArray());
-    glUniform1i(glGetUniformLocation(renderProgram, "depthId"), 1);
+    glUniform1i(glGetUniformLocation(vcLookupProgram, "depthId"), 1);
 
-    glUniformMatrix4fv(glGetUniformLocation(renderProgram, "reprojMat"), 1, GL_FALSE, value_ptr(reprojectionMat));
     rndr.draw(tileMesh->geometry(), mat4(1.0), PrimitiveType::TRIANGLES);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+    rndr.disableDepthBuffer();
+
+
+    rndr.setProgram(drawSceneProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());
+    glUniform1i(glGetUniformLocation(drawSceneProgram, "texid"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileDepthTextureArray());
+    glUniform1i(glGetUniformLocation(drawSceneProgram, "depthId"), 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, vcLookupTexture);
+    glUniform1i(glGetUniformLocation(drawSceneProgram, "vcTex"), 2);
+
+    glUniform1fv(glGetUniformLocation(drawSceneProgram, "np"), 1, &np);
+    glUniform3fv(glGetUniformLocation(drawSceneProgram, "cameraPos"), 1, value_ptr(camera().getPosition()));
+    glUniform2fv(glGetUniformLocation(drawSceneProgram, "viewportSize"), 1, value_ptr(vec2(width(), height())));
+
+    rndr.draw(tileMesh->geometry(), mat4(1.0), PrimitiveType::TRIANGLES);
+
+
+
 
     if(config.showWireFrame) {
       glLineWidth(3.0);

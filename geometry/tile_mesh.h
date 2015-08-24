@@ -80,104 +80,86 @@ Quad4 operator-(const Quad4& quad1, const Quad4& quad2) {
 }
 
 
-enum Mode {
-  TEXTURED,
-  IDENTIFIED
-};
-
-template <geometry::Mode mode, class Tiling>
+template <class Tiling>
 class TileMesh {
 public:
-	struct Vertex;
+  typedef Tuple<glm::vec4, glm::vec3, glm::vec3> Vertex;
 private:
-	Tiling mTiling;
+  enum {POS = 0, TEX = 1, ID = 2};
+  Tiling mTiling;
 
-	bool mRebuildGeometry = true;
+  bool mRebuildGeometry = true;
 
-	Geometry mGeometry;
+  Geometry mGeometry;
 
-	GLuint mTileTextureArray = 0;
-	GLuint mTileDepthTextureArray = 0;
-	GLuint mNumTextures = 0;
+  GLuint mTileTextureArray = 0;
+  GLuint mTileDepthTextureArray = 0;
+  GLuint mNumTextures = 0;
 
-	void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
+  void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
 
-	/*
-	 * Create an OpenGL texture2D array of n textures of size w by h pixels each
-	 */
-	GLuint makeTextureArray(size_t w, size_t h, size_t n);
+  /*
+   * Create an OpenGL texture2D array of n textures of size w by h pixels each
+   */
+  GLuint makeTextureArray(size_t w, size_t h, size_t n);
 
-	/*
-	 * Load the image in the file whose name is key to arrayIndex in the Texture2DArray
-	 * specified by tex
-	 */
-	void loadImgToTexArray(const std::string& key, GLuint tex, size_t arrayIndex);
+  /*
+   * Load the image in the file whose name is key to arrayIndex in the Texture2DArray
+   * specified by tex
+   */
+  void loadImgToTexArray(const std::string& key, GLuint tex, size_t arrayIndex);
 
-	std::pair<std::string, std::string> getTexKey(const glm::ivec2& tileIndex, const glm::ivec2& adjacentTileIndex);
+  std::pair<std::string, std::string> getTexKey(const glm::ivec2& tileIndex, const glm::ivec2& adjacentTileIndex);
 
-	Geometry generateTexturedTileGeometry();
-
-	Geometry generateIdentifiedTileGeometry();
+  Geometry generateTileGeometry();
 
 public:
-	void printTextureNames();
+  void printTextureNames();
 
-	struct Vertex {
-		glm::vec4 pos;
-		glm::vec3 texcoord;
-	};
+  static std::array<Quad4, Tiling::numEdgesPerTile()> edgeFaces() {
+    std::array<Quad4, Tiling::numEdgesPerTile()> ret;
 
-	static std::array<Quad4, Tiling::numEdgesPerTile()> edgeFaces() {
-	  std::array<Quad4, Tiling::numEdgesPerTile()> ret;
+    auto adjVerts = Tiling::adjacentVertices(glm::ivec2(0));
+    const glm::vec2 TILE_CENTER_OFFSET = Tiling::tileCenterCoords2d(glm::ivec2(0));
 
-	  auto adjVerts = Tiling::adjacentVertices(glm::ivec2(0));
-	  const glm::vec2 TILE_CENTER_OFFSET = Tiling::tileCenterCoords2d(glm::ivec2(0));
+    for(size_t i = 0; i != Tiling::numEdgesPerTile(); i++) {
+      glm::vec2 v1 = Tiling::coords2d(adjVerts[i]) - TILE_CENTER_OFFSET;
+      glm::vec2 v2 = Tiling::coords2d(adjVerts[(i+1) % Tiling::numEdgesPerTile()]) - TILE_CENTER_OFFSET;
+      ret[i] = Quad4(
+          glm::vec4(v1.x, -0.5, v1.y, 1.0),
+          glm::vec4(v2.x, -0.5, v2.y, 1.0),
+          glm::vec4(v2.x, 0.5, v2.y, 1.0),
+          glm::vec4(v1.x, 0.5, v1.y, 1.0));
+    }
 
-	  for(size_t i = 0; i != Tiling::numEdgesPerTile(); i++) {
-	    glm::vec2 v1 = Tiling::coords2d(adjVerts[i]) - TILE_CENTER_OFFSET;
-	    glm::vec2 v2 = Tiling::coords2d(adjVerts[(i+1) % Tiling::numEdgesPerTile()]) - TILE_CENTER_OFFSET;
-	    ret[i] = Quad4(
-	        glm::vec4(v1.x, -0.5, v1.y, 1.0),
-	        glm::vec4(v2.x, -0.5, v2.y, 1.0),
-	        glm::vec4(v2.x, 0.5, v2.y, 1.0),
-	        glm::vec4(v1.x, 0.5, v1.y, 1.0));
-	  }
+    return ret;
+  }
 
-	  return ret;
-	}
+  GLuint numTextures() const {
+    return mNumTextures;
+  }
 
-	GLuint numTextures() const {
-		return mNumTextures;
-	}
+  GLuint tileTextureArray() const {
+    return mTileTextureArray;
+  }
 
-	GLuint tileTextureArray() const {
-		return mTileTextureArray;
-	}
+  GLuint tileDepthTextureArray() const {
+    return mTileDepthTextureArray;
+  }
 
-	GLuint tileDepthTextureArray() const {
-		return mTileDepthTextureArray;
-	}
+  const Geometry& geometry() {
+    if(mRebuildGeometry) {
+      mGeometry = generateTileGeometry();
+      mRebuildGeometry = false;
+    }
+    return mGeometry;
+  }
 
-	const Geometry& geometry() {
-	  if(mRebuildGeometry) {
-	    switch(mode) {
-	    case TEXTURED:
-        mGeometry = generateTexturedTileGeometry();
-        break;
-	    case IDENTIFIED:
-	      mGeometry = generateIdentifiedTileGeometry();
-	      break;
-	    }
-	    mRebuildGeometry = false;
-	  }
-		return mGeometry;
-	}
+  void rebuildMesh(size_t radius, const glm::ivec2& ctr = glm::ivec2(0));
 
-	void rebuildMesh(size_t radius);
+  TileMesh(size_t radius);
 
-	TileMesh(size_t radius);
-
-	virtual ~TileMesh();
+  virtual ~TileMesh();
 };
 
 #ifndef IS_IDE
