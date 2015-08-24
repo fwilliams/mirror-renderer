@@ -28,8 +28,8 @@ struct EnableAttribArrayAOS {
     typedef typename ConsCell::TailType TT;
     typedef ListElement<0, ConsCell> LE;
 
-    std::cout << "glEnableVertexAttribArray(" << I << ");" << std::endl;
-    std::cout << "glVertexAttribPointer(" << I << ", " << utils::dim<HT>() << ", " << utils::gl_value_type_id<HT>() << ", " << GL_FALSE << ", " << stride << ", " << LE::offset() + OFF << ");" << std::endl;
+//    std::cout << "glEnableVertexAttribArray(" << I << ");" << std::endl;
+//    std::cout << "glVertexAttribPointer(" << I << ", " << utils::dim<HT>() << ", " << utils::gl_value_type_id<HT>() << ", " << GL_FALSE << ", " << stride << ", " << LE::offset() + OFF << ");" << std::endl;
     glEnableVertexAttribArray(I);
     glVertexAttribPointer(I, utils::dim<HT>(), utils::gl_value_type_id<HT>(), GL_FALSE, stride, (void*)(LE::offset() + OFF));
 

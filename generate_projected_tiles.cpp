@@ -58,7 +58,6 @@ public:
   void onCreate(Renderer& rndr) {
     rndr.setClearColor(vec4(0.1, 0.1, 0.5, 1.0));
     rndr.enableFaceCulling();
-
     rndr.enableAlphaBlending();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -139,13 +138,10 @@ public:
   }
 
   void onDraw(Renderer& rndr) {
-    rndr.clearViewport();
-
-
-    rndr.enableDepthBuffer();
-
     glBindFramebuffer(GL_FRAMEBUFFER, vcLookubFramebuffer);
     glViewport(0, 0, width(), height());
+    rndr.setClearColor(vec4(1.0));
+    rndr.clearViewport();
 
     rndr.setProgram(vcLookupProgram);
 
@@ -163,8 +159,8 @@ public:
 
 
 
-    rndr.disableDepthBuffer();
-
+    rndr.setClearColor(vec4(0.0, 0.0, 1.0, 1.0));
+    rndr.clearViewport();
 
     rndr.setProgram(drawSceneProgram);
 
@@ -206,7 +202,7 @@ int main(int argc, char** argv) {
     RenderMesh tileMesh(radius);
     tileMesh.printTextureNames();
   } else {
-    App w(800, 600);
+    App w(1280, 1024);
     w.mainLoop();
   }
 }
