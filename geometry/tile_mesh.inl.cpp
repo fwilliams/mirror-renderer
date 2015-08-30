@@ -16,7 +16,6 @@ TileMesh<Tiling>::~TileMesh() {}
 template <class Tiling>
 void TileMesh<Tiling>::rebuildMesh(size_t radius, const glm::ivec2& ctr) {
   mTiling.clear();
-
   auto nearestN = [radius] (const glm::ivec2& tile, const glm::ivec2& ctr) {
     return (distance(Tiling::coords2d(tile), glm::vec2(ctr)) <= radius);
   };
@@ -137,7 +136,6 @@ Geometry TileMesh<Tiling>::generateTileGeometry() {
   // The next tile ID to assign to a new tile
   size_t nextId = 1;
 
-  const size_t IMG_DIM = 512;
   size_t currentTexIndex = 0;
   std::unordered_map<std::string, size_t> textures;
 
@@ -145,6 +143,7 @@ Geometry TileMesh<Tiling>::generateTileGeometry() {
   mTileDepthTextureArray = makeTextureArray(IMG_DIM, IMG_DIM, mTiling.edgeCount()*2);
 
   size_t vOffset = 0, iOffset = 0;
+  size_t edgeIndex = 0;
   for(auto t = mTiling.tiles_begin(); t != mTiling.tiles_end(); t++) { // For each tile, t
     for(auto e = t->second.edges_begin(); e != t->second.edges_end(); e++) { // For each edge of t, e
       // The coordinates of the vertices of the e
@@ -218,6 +217,10 @@ Geometry TileMesh<Tiling>::generateTileGeometry() {
         }
         id = id / (mTiling.tileCount() + 1);
 
+
+        std::cout << "insert " << glm::to_string(glm::vec3(t->first, edgeIndex)) << " -> " << textureOffset << std::endl;
+        viewToTexIndex[glm::vec3(t->first, edgeIndex)] = textureOffset;
+        edgeIndex = (edgeIndex + 1) % Tiling::numEdgesPerTile();
 
         verts[vOffset++] = Vertex{glm::vec4(v1.x,  0.5, v1.y, 1.0), glm::vec3(0.0, 1.0, textureOffset), pos};
         verts[vOffset++] = Vertex{glm::vec4(v1.x, -0.5, v1.y, 1.0), glm::vec3(0.0, 0.0, textureOffset), pos};

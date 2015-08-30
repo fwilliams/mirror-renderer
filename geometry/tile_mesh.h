@@ -85,6 +85,11 @@ class TileMesh {
 public:
   typedef Tuple<glm::vec4, glm::vec3, glm::vec3> Vertex;
 private:
+  /*
+   * The width and height of an image for a specific view
+   */
+  const size_t IMG_DIM = 512;
+
   enum {POS = 0, TEX = 1, ID = 2};
   Tiling mTiling;
 
@@ -96,12 +101,9 @@ private:
   GLuint mTileDepthTextureArray = 0;
   GLuint mNumTextures = 0;
 
-  void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
+  std::unordered_map<glm::ivec3, size_t> viewToTexIndex;
 
-  /*
-   * Create an OpenGL texture2D array of n textures of size w by h pixels each
-   */
-  GLuint makeTextureArray(size_t w, size_t h, size_t n);
+  void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
 
   /*
    * Load the image in the file whose name is key to arrayIndex in the Texture2DArray
@@ -114,6 +116,11 @@ private:
   Geometry generateTileGeometry();
 
 public:
+  /*
+   * Create an OpenGL texture2D array of n textures of size w by h pixels each
+   */
+  static GLuint makeTextureArray(size_t w, size_t h, size_t n);
+
   void printTextureNames();
 
   static std::array<Quad4, Tiling::numEdgesPerTile()> edgeFaces() {
@@ -135,6 +142,15 @@ public:
     return ret;
   }
 
+  int indexForView(const glm::ivec3& view) {
+    try {
+      size_t i = viewToTexIndex.at(view);
+      return i;
+    } catch (std::out_of_range& e) {
+      return -1;
+    }
+  }
+
   GLuint numTextures() const {
     return mNumTextures;
   }
@@ -145,6 +161,10 @@ public:
 
   GLuint tileDepthTextureArray() const {
     return mTileDepthTextureArray;
+  }
+
+  glm::ivec2 getViewImageDims() {
+    return glm::ivec2(IMG_DIM);
   }
 
   const Geometry& geometry() {

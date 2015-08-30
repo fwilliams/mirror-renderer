@@ -25,17 +25,17 @@ class App: public InteractiveGLWindow {
   GLProgramBuilder programBuilder;
 
   GLuint drawSceneProgram = 0;
-  GLuint vcLookupProgram = 0;
+  GLuint computeDepthProgram = 0;
+  GLuint computeCanonicalImgProgram = 0;
   GLuint solidColorProgram = 0;
 
   GLuint vcLookubFramebuffer = 0;
-  GLuint vcLookupTexture = 0;
+  GLuint depthTexture = 0;
+  GLuint imageTexture = 0;
 
   ivec2 ctr = ivec2(0);
 
   unique_ptr<RenderMesh> tileMesh;
-
-  float np = 0;
 
   class Config {
     size_t mirrorViewId = 0;
@@ -64,9 +64,13 @@ public:
     programBuilder.addIncludeDir("shaders/glsl330");
     programBuilder.addIncludeDir("shaders");
 
-    vcLookupProgram = programBuilder.buildFromFiles(
+    computeDepthProgram = programBuilder.buildFromFiles(
         "shaders/tile_color_vert.glsl",
         "shaders/tile_color_frag.glsl");
+
+    computeCanonicalImgProgram = programBuilder.buildFromFiles(
+        "shaders/tile_color_vert.glsl",
+        "shaders/tile_color_frag2.glsl");
 
     drawSceneProgram = programBuilder.buildFromFiles(
         "shaders/solid_texture_vert.glsl",
@@ -79,8 +83,14 @@ public:
     glGenFramebuffers(1, &vcLookubFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, vcLookubFramebuffer);
 
-    glGenTextures(1, &vcLookupTexture);
-    glBindTexture(GL_TEXTURE_2D, vcLookupTexture);
+    glGenTextures(1, &depthTexture);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glGenTextures(1, &imageTexture);
+    glBindTexture(GL_TEXTURE_2D, imageTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -91,7 +101,6 @@ public:
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width(), height());
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, vcLookupTexture, 0);
     GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, drawBuffers);
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
@@ -105,8 +114,6 @@ public:
       p[i] = camera().getViewMatrix() * p[i];
       p[i] /= 2.0;
     }
-    np = 1.0 - p[0].z;
-
     camera().setPerspectiveProjection(p[1].x, p[0].x, p[0].y, p[1].y, 1.0 - p[0].z, 10000.0);
   }
 
@@ -139,21 +146,43 @@ public:
 
   void onDraw(Renderer& rndr) {
     glBindFramebuffer(GL_FRAMEBUFFER, vcLookubFramebuffer);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, depthTexture, 0);
     glViewport(0, 0, width(), height());
     rndr.setClearColor(vec4(1.0));
     rndr.clearViewport();
 
-    rndr.setProgram(vcLookupProgram);
+    rndr.setProgram(computeDepthProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());
-    glUniform1i(glGetUniformLocation(vcLookupProgram, "texid"), 0);
+    glUniform1i(glGetUniformLocation(computeDepthProgram, "texid"), 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileDepthTextureArray());
-    glUniform1i(glGetUniformLocation(vcLookupProgram, "depthId"), 1);
+    glUniform1i(glGetUniformLocation(computeDepthProgram, "depthId"), 1);
 
     rndr.draw(tileMesh->geometry(), mat4(1.0), PrimitiveType::TRIANGLES);
+
+
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, imageTexture, 0);
+    glViewport(0, 0, width(), height());
+    rndr.setClearColor(vec4(1.0));
+    rndr.clearViewport();
+
+    rndr.setProgram(computeCanonicalImgProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileTextureArray());
+    glUniform1i(glGetUniformLocation(computeCanonicalImgProgram, "texid"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tileMesh->tileDepthTextureArray());
+    glUniform1i(glGetUniformLocation(computeCanonicalImgProgram, "depthId"), 1);
+
+    rndr.draw(tileMesh->geometry(), mat4(1.0), PrimitiveType::TRIANGLES);
+
+
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -173,10 +202,13 @@ public:
     glUniform1i(glGetUniformLocation(drawSceneProgram, "depthId"), 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, vcLookupTexture);
-    glUniform1i(glGetUniformLocation(drawSceneProgram, "vcTex"), 2);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glUniform1i(glGetUniformLocation(drawSceneProgram, "depthTex"), 2);
 
-    glUniform1fv(glGetUniformLocation(drawSceneProgram, "np"), 1, &np);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, imageTexture);
+    glUniform1i(glGetUniformLocation(drawSceneProgram, "imgTex"), 3);
+
     glUniform3fv(glGetUniformLocation(drawSceneProgram, "cameraPos"), 1, value_ptr(camera().getPosition()));
     glUniform2fv(glGetUniformLocation(drawSceneProgram, "viewportSize"), 1, value_ptr(vec2(width(), height())));
 

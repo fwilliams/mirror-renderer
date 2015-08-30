@@ -1,26 +1,23 @@
 #pragma include "stddefs.glsl"
 
-uniform sampler2D depthTex;
-uniform sampler2D imgTex;
+uniform sampler2DArray imageTexArray;
+uniform sampler2DArray depthTexArray;
 
 uniform vec2 viewportSize;
 uniform vec3 cameraPos;
-
-in vec4 v_position;
-in vec2 v_texcoord; 
-flat in vec3 v_mirrorCtr;
+uniform float f;
+uniform uint texindex;
 
 out vec4 fragcolor;
 
 void main() {
 	vec2 uv = gl_FragCoord.xy / viewportSize;
-	float depth = texture(depthTex, uv).r * -5.0;
+	uv = vec2(uv.x, 1.0 - uv.y);
+	float depth = texture(depthTexArray, vec3(uv, texindex)).r * 5.0;
 	
 	vec2 uvPos = uv - vec2(0.5);
-	vec3 pos = normalize(vec3(uvPos, -1.0)) * depth;
+	vec3 pos = normalize(vec3(uvPos, 1.0)) * depth;
 	
-	
-	float f = length(v_mirrorCtr);
 	float fMinusZc = f - cameraPos.z;
 	mat4 rpMat = mat4(vec4(fMinusZc, 0, 0, 0), 
 	                  vec4(0, fMinusZc, 0, 0),
@@ -30,6 +27,8 @@ void main() {
     vec3 pp = reprojectedPos.xyz / reprojectedPos.w;
     vec2 tc = pp.xy/pp.z + vec2(0.5);
 
-	fragcolor = texture(depthTex, tc);
-
+	fragcolor = texture(depthTexArray, vec3(uv, texindex));
+	fragcolor = texture(imageTexArray, vec3(uv, texindex));
+	fragcolor = texture(imageTexArray, vec3(tc, texindex));
+	fragcolor.xyz = normalize(pos);
 }

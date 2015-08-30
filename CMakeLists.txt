@@ -25,3 +25,6 @@ enable_testing()
 
 add_executable(generate_projected_tiles generate_projected_tiles.cpp)
 target_link_libraries(generate_projected_tiles renderer util SOIL)
+
+add_executable(virtual_copy_transform virtual_copy_transform.cpp)
+target_link_libraries(virtual_copy_transform renderer util SOIL)
