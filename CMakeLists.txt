@@ -28,3 +28,6 @@ target_link_libraries(generate_projected_tiles renderer util SOIL)
 
 add_executable(virtual_copy_transform virtual_copy_transform.cpp)
 target_link_libraries(virtual_copy_transform renderer util SOIL)
+
+add_executable(composite composite.cpp)
+target_link_libraries(composite renderer util SOIL)

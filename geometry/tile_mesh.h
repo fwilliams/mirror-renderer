@@ -105,17 +105,17 @@ private:
 
   void depthsort(Vertex* verts, GLuint* inds, size_t numIndices);
 
-  /*
-   * Load the image in the file whose name is key to arrayIndex in the Texture2DArray
-   * specified by tex
-   */
-  void loadImgToTexArray(const std::string& key, GLuint tex, size_t arrayIndex);
-
   std::pair<std::string, std::string> getTexKey(const glm::ivec2& tileIndex, const glm::ivec2& adjacentTileIndex);
 
   Geometry generateTileGeometry();
 
 public:
+  /*
+   * Load the image in the file whose name is key to arrayIndex in the Texture2DArray
+   * specified by tex
+   */
+  static void loadImgToTexArray(const std::string& key, GLuint tex, size_t arrayIndex);
+
   /*
    * Create an OpenGL texture2D array of n textures of size w by h pixels each
    */

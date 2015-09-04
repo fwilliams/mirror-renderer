@@ -79,12 +79,24 @@ void TileMesh<Tiling>::loadImgToTexArray(const std::string& key, GLuint tex, siz
     throw std::runtime_error(std::string("Failed to load texture: ") + key);
   }
 
+  GLenum format = 0;
+  switch(channels) {
+  case 4:
+    format = GL_RGBA;
+    break;
+  case 3:
+    format = GL_RGB;
+    break;
+  default:
+    throw(std::runtime_error(std::string("Invalid number of image channels. Expecting 3 or 4, got ") + std::to_string(channels)));
+  }
+
   glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
   glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
       0, // Mipmap level
       0, 0, arrayIndex, // x-offset, y-offset, z-offset
       w, h, 1, // width, height, depth
-      GL_RGBA, GL_UNSIGNED_BYTE, img);
+      format, GL_UNSIGNED_BYTE, img);
   SOIL_free_image_data(img);
 }
 
