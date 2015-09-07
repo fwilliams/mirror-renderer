@@ -54,17 +54,17 @@ void TileMesh<Tiling>::depthsort(Vertex* verts, GLuint* inds, size_t numIndices)
 }
 
 template <class Tiling>
-GLuint TileMesh<Tiling>::makeTextureArray(size_t w, size_t h, size_t n) {
+GLuint TileMesh<Tiling>::makeTextureArray(size_t w, size_t h, size_t n, GLenum interalFormat) {
   GLuint texArray;
   glGenTextures(1, &texArray);
   glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
 
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, w, h, n);
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, interalFormat, w, h, n);
 
   return texArray;
 }
@@ -76,7 +76,7 @@ void TileMesh<Tiling>::loadImgToTexArray(const std::string& key, GLuint tex, siz
   unsigned char* img = SOIL_load_image(key.c_str(), &w, &h, &channels, SOIL_LOAD_AUTO);
 
   if(img == 0) {
-    throw std::runtime_error(std::string("Failed to load texture: ") + key);
+    throw std::runtime_error(std::string("SOIL Failed to load texture: ") + key + std::string(": ") + std::string(SOIL_last_result()));
   }
 
   GLenum format = 0;

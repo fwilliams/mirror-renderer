@@ -1,4 +1,5 @@
 #include "sdl_gl_window.h"
+#include "renderer/renderer.h"
 
 #ifndef UTILS_BASIC_WINDOW_H_
 #define UTILS_BASIC_WINDOW_H_

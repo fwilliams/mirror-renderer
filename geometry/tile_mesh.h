@@ -119,7 +119,7 @@ public:
   /*
    * Create an OpenGL texture2D array of n textures of size w by h pixels each
    */
-  static GLuint makeTextureArray(size_t w, size_t h, size_t n);
+  static GLuint makeTextureArray(size_t w, size_t h, size_t n, GLenum interalFormat = GL_RGBA8);
 
   void printTextureNames();
 

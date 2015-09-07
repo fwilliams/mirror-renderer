@@ -31,3 +31,7 @@ target_link_libraries(virtual_copy_transform renderer util SOIL)
 
 add_executable(composite composite.cpp)
 target_link_libraries(composite renderer util SOIL)
+
+add_executable(lumigraph_viewer lumigraph_viewer.cpp)
+target_link_libraries(lumigraph_viewer renderer util SOIL boost_system boost_filesystem)
+

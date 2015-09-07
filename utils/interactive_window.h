@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 
 #include "renderer/camera.h"
-
 #include "renderer/renderer.h"
 
 #include "sdl_gl_window.h"
