@@ -6,15 +6,14 @@
 #include <stdexcept>
 #include <functional>
 
+#include "utils/gl_utils.h"
+
 #ifndef SDL_GL_HELPER_H_
 #define SDL_GL_HELPER_H_
 
 namespace detail {
 
 class SDLGLWindow {
-	size_t vpx;
-	size_t vpy;
-
 	SDL_Window* window;
 
 	SDL_GLContext gl_ctx;
@@ -24,15 +23,17 @@ class SDLGLWindow {
 	bool running;
 
 protected:
-	virtual void setup(SDLGLWindow&) {};
+	virtual void setup(SDLGLWindow&) {}
 
-	virtual void handle_event(SDLGLWindow&, const SDL_Event& event) {};
+	virtual void handle_event(SDLGLWindow&, const SDL_Event& event) {}
 
-	virtual void update(SDLGLWindow&) {};
+	virtual void update(SDLGLWindow&) {}
 
-	virtual void draw(SDLGLWindow&) {};
+	virtual void draw(SDLGLWindow&) {}
 
-	virtual void teardown(SDLGLWindow&) {};
+	virtual void teardown(SDLGLWindow&) {}
+
+	virtual void resize(SDLGLWindow&, size_t, size_t) {}
 
 public:
 
@@ -57,11 +58,15 @@ public:
 	};
 
 	size_t width() const {
-		return vpx;
+	  int w;
+		SDL_GetWindowSize(window, &w, nullptr);
+		return w;
 	}
 
 	size_t height() const {
-		return vpy;
+    int h;
+    SDL_GetWindowSize(window, nullptr, &h);
+    return h;
 	}
 
 	double aspectRatio() const {

@@ -6,14 +6,13 @@ using namespace std;
 
 namespace detail {
 
-SDLGLWindow::SDLGLWindow(size_t width, size_t height) :
-    vpx(width), vpy(height), running(false) {
+SDLGLWindow::SDLGLWindow(size_t width, size_t height) : running(false) {
   SDL_Init(SDL_INIT_EVERYTHING);
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 
-  window = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, vpx, vpy,
+  window = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height,
       SDL_WINDOW_OPENGL);
 
   gl_ctx = SDL_GL_CreateContext(window);
@@ -43,8 +42,13 @@ void SDLGLWindow::mainLoop() {
   do {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) {
-        running = false;
+      if (event.type == SDL_WINDOWEVENT) {
+        if(event.window.event == SDL_WINDOWEVENT_CLOSE) {
+          running = false;
+        }
+        if(event.window.event == SDL_WINDOWEVENT_RESIZED) {
+          resize(*this, event.window.data1, event.window.data2);
+        }
       }
       handle_event(*this, event);
     }

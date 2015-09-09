@@ -4,7 +4,7 @@ uniform sampler2DArray imageTexArray;
 uniform sampler2DArray depthTexArray;
 
 uniform vec2 viewportSize;
-uniform float overlap;
+uniform float blendCoeff;
 
 layout(origin_upper_left) in vec4 gl_FragCoord;
 
@@ -29,12 +29,10 @@ void main() {
 				fragcolor.rgb = color.rgb;
 				pixelDepth = depth;
 			} else if(pixelDepth == depth) { // The pixels correspond to the same point
-				fragcolor.rgb = fragcolor.rgb + vec3(0.0, 0.5, 0.0); //mix(fragcolor.rgb, color.xyz, 0.0);
+				fragcolor.rgb = mix(color.xyz, fragcolor.rgb, blendCoeff);
 			} else if(depth < pixelDepth) {  // The pixels correspond to different points and the new one is in front
-				fragcolor.rgb = color.rgb + vec3(0.5, 0.0, 0.0);
+				fragcolor.rgb = color.rgb;// + vec3(0.5, 0.0, 0.0);
 				pixelDepth = depth;
-			} else {                         // The pixels correspond to different points and the new one is in back. Leave it alone.
-				//fragcolor = vec4(0.0, 0.0, 0.5, 0.5);
 			}
 		}
 	}

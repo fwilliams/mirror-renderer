@@ -19,9 +19,17 @@ class BasicGLWindow : public detail::SDLGLWindow {
 		onDraw(*mRenderer);
 	}
 
+	void resize(SDLGLWindow& wnd, size_t w, size_t h) {
+	  onResize(w, h);
+	}
+
 public:
 	BasicGLWindow(size_t w, size_t h) : detail::SDLGLWindow(w, h) {
 		mRenderer = std::make_unique<Renderer>();
+	}
+
+	virtual void onResize(size_t width, size_t height) {
+	  glViewport(0, 0, width, height);
 	}
 
 	virtual void onCreate(Renderer& rndr) {}
@@ -29,7 +37,6 @@ public:
 	virtual void onEvent(const SDL_Event& event) {}
 
 	virtual void onDraw(Renderer& rndr) {}
-
 };
 
 
