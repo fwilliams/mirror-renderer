@@ -6,15 +6,20 @@ uniform sampler2DArray depthTexArray;
 uniform vec2 viewportSize;
 uniform float blendCoeff;
 
+uniform bool flip;
+
 layout(origin_upper_left) in vec4 gl_FragCoord;
 
-out vec4 fragcolor;
+layout(location = 0) out vec4 fragcolor;
 
 void main() {
 	fragcolor = vec4(vec3(0.0), 1.0);
 	float pixelDepth = -1.0;
 	
 	vec2 texcoord = gl_FragCoord.xy / viewportSize;
+	if(flip) {
+		texcoord.y = 1.0 - texcoord.y;
+	}
 	
 	for(int i = 0; i < numLayers; i++) {
 		vec4 color = texture(imageTexArray, vec3(texcoord, i));
