@@ -90,10 +90,10 @@ public:
 
     for(unsigned i = 0; i < Config::NUM_FACES; i++) {
       for(unsigned l = 0; l < mConfig.numLayers(); l++) {
-        const string fileSuffix = Config::to_string(static_cast<Config::Mode>(i)) +
+        const string fileSuffix = /*Config::to_string(static_cast<Config::Mode>(i))*/ string("FrontWallView") +
             string("_") + to_string(l) + string("_") + to_string(overlap) + string(".ppm");
-        const string imgFilename = string("envmaps/") + fileSuffix;
-        const string depthFilename = string("envmaps/db_") + fileSuffix;
+        const string imgFilename = string("kernel_images/") + fileSuffix;
+        const string depthFilename = string("kernel_images/db_") + fileSuffix;
 
         cout << "Loading " << fileSuffix << endl;
 
@@ -178,6 +178,9 @@ public:
     if(flip) {
       uFlip = 1;
     }
+
+    glUniform1f(glGetUniformLocation(mRenderViewProgram, "kernelSize"), 6.0f);
+    glUniform1f(glGetUniformLocation(mRenderViewProgram, "overlap"), 3.0f);
     glUniform1iv(glGetUniformLocation(mRenderViewProgram, "flip"), 1, &uFlip);
     glUniform1fv(glGetUniformLocation(mRenderViewProgram, "blendCoeff"), 1, &blendCoeff);
     glUniform2fv(glGetUniformLocation(mRenderViewProgram, "viewportSize"), 1, value_ptr(vec2(viewportDims)));
@@ -287,7 +290,7 @@ public:
     mProgramBuilder.addIncludeDir("shaders/glsl330");
     mProgramBuilder.addIncludeDir("shaders");
 
-    mViewRenderer = make_unique<ViewRenderer>(5, 3, mProgramBuilder, ivec2(256));
+    mViewRenderer = make_unique<ViewRenderer>(5, 3, mProgramBuilder, ivec2(512));
   }
 
 
@@ -343,6 +346,6 @@ public:
 };
 
 int main(int argc, char** argv) {
-  App w(800, 600);
+  App w(512, 512);
   w.mainLoop();
 }

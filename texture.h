@@ -103,12 +103,14 @@ void load_ppm_to_gl_tex2darray(const std::string& filename, GLuint texarray, siz
   }
 
   glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_TRUE);
+  check_gl_error();
   glBindTexture(GL_TEXTURE_2D_ARRAY, texarray);
   check_gl_error();
   glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, // Mipmap level
       0, 0, arrayIndex, // x-offset, y-offset, z-offset
       w, h, 1, // width, height, depth
       GL_RGB, type, img);
+  check_gl_error();
   glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
   check_gl_error();
   free(img);
