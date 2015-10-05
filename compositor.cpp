@@ -60,8 +60,8 @@ class ViewRenderer {
 public:
   typedef Tuple<vec2> Vertex;
 
-  ViewRenderer(size_t numLayers, size_t overlap, GLProgramBuilder& programBuilder, const ivec2& imgDims) :
-    mConfig(imgDims, "view_images") {
+  ViewRenderer(size_t numLayers, size_t overlap, GLProgramBuilder& programBuilder, const ivec2& imgDims, const string& imgDir) :
+    mConfig(imgDims, imgDir) {
 
     using namespace fs;
 
@@ -158,9 +158,10 @@ class App: public BasicGLWindow {
   unsigned mNumViews = 1;
   float mBlendCoefficient = 0.0;
   bool mSaveScreenshotFlag = false;
+  string mViewDir = "";
 
 public:
-  App(unsigned w, unsigned h) : BasicGLWindow(w, h) {}
+  App(unsigned w, unsigned h, const string& viewdir) : BasicGLWindow(w, h), mViewDir(viewdir) {}
 
   void onCreate(Renderer& rndr) {
     rndr.setClearColor(vec4(0.1, 0.1, 0.5, 1.0));
@@ -171,16 +172,18 @@ public:
     mProgramBuilder.addIncludeDir("shaders/glsl330");
     mProgramBuilder.addIncludeDir("shaders");
 
-    mViewRenderer = make_unique<ViewRenderer>(5, 3, mProgramBuilder, ivec2(800, 600));
+    mViewRenderer = make_unique<ViewRenderer>(5, 3, mProgramBuilder, ivec2(800, 600), mViewDir);
   }
 
 
   void onEvent(const SDL_Event& evt) {
     if(isKeyDownEvent(evt, SDLK_UP)) {
       mNumViews = glm::min<unsigned>(mViewRenderer->config().numImages(), mNumViews + 1);
+      cout << "num views: " << mNumViews << endl;
     }
     if(isKeyDownEvent(evt, SDLK_DOWN)) {
       mNumViews = glm::min<unsigned>(mViewRenderer->config().numImages(), mNumViews - 1);
+      cout << "num views: " << mNumViews << endl;
     }
     if(isKeyDownEvent(evt, SDLK_LEFT)) {
       mBlendCoefficient = glm::max<float>(0.0f, mBlendCoefficient - 0.01f);
@@ -209,6 +212,10 @@ public:
 };
 
 int main(int argc, char** argv) {
-  App w(800, 600);
+  string dirname = "images";
+  if(argc >= 2) {
+    dirname = string(argv[1]);
+  }
+  App w(800, 600, dirname);
   w.mainLoop();
 }
